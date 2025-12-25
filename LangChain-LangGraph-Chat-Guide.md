@@ -52,32 +52,32 @@ Together, they form a powerful stack for building sophisticated chat application
 
 ```bash
 # Install LangChain core
-pip install langchain
+uv add langchain
 
 # Install LangGraph
-pip install langgraph
+uv add langgraph
 ```
 
 ### Provider-Specific Dependencies
 
 ```bash
 # OpenAI
-pip install -U "langchain[openai]"
+uv add "langchain[openai]"
 
 # Anthropic (Claude)
-pip install -U "langchain[anthropic]"
+uv add "langchain[anthropic]"
 
 # Google (Gemini)
-pip install -U "langchain[google-genai]"
+uv add "langchain[google-genai]"
 
 # AWS Bedrock
-pip install -U "langchain[aws]"
+uv add "langchain[aws]"
 
 # HuggingFace
-pip install -U "langchain[huggingface]"
+uv add "langchain[huggingface]"
 
 # Ollama (Local Models)
-pip install -qU langchain-ollama
+uv add langchain-ollama
 ```
 
 ---

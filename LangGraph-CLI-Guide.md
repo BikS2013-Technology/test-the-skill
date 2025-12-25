@@ -38,20 +38,23 @@ The CLI supports both **Python** and **JavaScript/TypeScript** projects.
 
 - **Docker**: Required for `build` and `up` commands
 - **Python 3.11+**: Required for Python projects
+- **UV**: Recommended Python package manager ([install UV](https://docs.astral.sh/uv/getting-started/installation/))
 - **Node.js 20+**: Required for JavaScript projects
 
 ### Python Installation
 
 ```bash
 # Basic installation
-pip install langgraph-cli
+uv add langgraph-cli
 
 # With in-memory support (required for 'dev' command)
-pip install -U "langgraph-cli[inmem]"
-
-# Using UV
-uv add langgraph-cli
+uv add "langgraph-cli[inmem]"
 ```
+
+> **Note**: If you're not using UV, you can alternatively use pip:
+> ```bash
+> pip install -U "langgraph-cli[inmem]"
+> ```
 
 ### JavaScript Installation
 
@@ -455,7 +458,7 @@ docker run \
 #### Python (pytest)
 
 ```bash
-pip install -U pytest
+uv add --dev pytest
 ```
 
 ```python
@@ -522,7 +525,7 @@ test('basic agent execution', async () => {
 #### Using Python SDK
 
 ```bash
-pip install langgraph-sdk
+uv add langgraph-sdk
 ```
 
 ```python
@@ -609,7 +612,7 @@ curl -s --request POST \
 
 ```bash
 # Install CLI
-pip install -U langgraph-cli
+uv add langgraph-cli
 
 # Deploy
 langgraph deploy --config langgraph.json
