@@ -8,46 +8,76 @@ This guide provides comprehensive instructions on using LangChain to communicate
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Installation](#installation)
-3. [Connecting to LLMs](#connecting-to-llms)
-   - [Unified Model Initialization](#unified-model-initialization)
-   - [Provider-Specific Classes](#provider-specific-classes)
-   - [Configuration Parameters](#configuration-parameters)
-   - [Runtime Model Switching](#runtime-model-switching)
-4. [Messages and Conversations](#messages-and-conversations)
-   - [Message Types](#message-types)
-   - [Dictionary Format](#dictionary-format)
-   - [Message Objects](#message-objects)
-   - [Multimodal Messages](#multimodal-messages)
-5. [Building a Simple Chat Application](#building-a-simple-chat-application)
-   - [Basic Invocation](#basic-invocation)
-   - [Conversation History](#conversation-history)
-   - [Simple Chat Loop](#simple-chat-loop)
-6. [Streaming Responses](#streaming-responses)
-   - [Basic Streaming](#basic-streaming)
-   - [Async Streaming with Events](#async-streaming-with-events)
-   - [Aggregating Streamed Chunks](#aggregating-streamed-chunks)
-   - [Batch Processing](#batch-processing)
-7. [Prompt Templates](#prompt-templates)
-   - [Basic Templates](#basic-templates)
-   - [Chat Prompt Templates](#chat-prompt-templates)
-   - [Dynamic Prompts](#dynamic-prompts)
-8. [Chains and Runnables (LCEL)](#chains-and-runnables-lcel)
-   - [What is LCEL](#what-is-lcel)
-   - [Creating Chains with Pipe Operator](#creating-chains-with-pipe-operator)
-   - [The @chain Decorator](#the-chain-decorator)
-   - [Runnable Configuration](#runnable-configuration)
-9. [Structured Output](#structured-output)
-   - [Using Pydantic Models](#using-pydantic-models)
-   - [Using TypedDict](#using-typeddict)
-   - [Using JSON Schema](#using-json-schema)
-10. [Tool Integration](#tool-integration)
+- [LangChain Fundamentals Guide](#langchain-fundamentals-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Installation](#installation)
+    - [Setting Up Your Project with uv](#setting-up-your-project-with-uv)
+    - [Base Installation](#base-installation)
+    - [Provider-Specific Dependencies](#provider-specific-dependencies)
+    - [Running Python Scripts](#running-python-scripts)
+      - [Option 1: Activate the Virtual Environment](#option-1-activate-the-virtual-environment)
+      - [Option 2: Use uv run (Recommended)](#option-2-use-uv-run-recommended)
+    - [Verifying Your Installation](#verifying-your-installation)
+  - [Connecting to LLMs](#connecting-to-llms)
+    - [Unified Model Initialization](#unified-model-initialization)
+    - [Provider-Specific Classes](#provider-specific-classes)
+    - [Supported LLM Providers](#supported-llm-providers)
+    - [Custom OpenAI-Compatible APIs](#custom-openai-compatible-apis)
+    - [Configuration Parameters](#configuration-parameters)
+    - [Runtime Model Switching](#runtime-model-switching)
+      - [Configurable Fields with Prefixes](#configurable-fields-with-prefixes)
+  - [Messages and Conversations](#messages-and-conversations)
+    - [Message Types](#message-types)
+    - [Dictionary Format](#dictionary-format)
+    - [Message Objects](#message-objects)
+      - [Creating Messages Manually](#creating-messages-manually)
+    - [Multimodal Messages](#multimodal-messages)
+      - [Images](#images)
+      - [Audio and Video](#audio-and-video)
+      - [PDF Documents](#pdf-documents)
+  - [Building a Simple Chat Application](#building-a-simple-chat-application)
+    - [Basic Invocation](#basic-invocation)
+    - [Conversation History](#conversation-history)
+    - [Simple Chat Loop](#simple-chat-loop)
+  - [Streaming Responses](#streaming-responses)
+    - [Basic Streaming](#basic-streaming)
+    - [Async Streaming with Events](#async-streaming-with-events)
+    - [Aggregating Streamed Chunks](#aggregating-streamed-chunks)
+    - [Batch Processing](#batch-processing)
+  - [Prompt Templates](#prompt-templates)
+    - [Basic Templates](#basic-templates)
+    - [Chat Prompt Templates](#chat-prompt-templates)
+    - [Dynamic Prompts](#dynamic-prompts)
+  - [Chains and Runnables (LCEL)](#chains-and-runnables-lcel)
+    - [What is LCEL](#what-is-lcel)
+    - [Creating Chains with Pipe Operator](#creating-chains-with-pipe-operator)
+      - [Multi-Step Chains](#multi-step-chains)
+    - [The @chain Decorator](#the-chain-decorator)
+    - [Runnable Configuration](#runnable-configuration)
+      - [RunnablePassthrough and RunnableLambda](#runnablepassthrough-and-runnablelambda)
+  - [Structured Output](#structured-output)
+    - [Using Pydantic Models](#using-pydantic-models)
+    - [Using TypedDict](#using-typeddict)
+    - [Using JSON Schema](#using-json-schema)
+    - [Include Raw Response](#include-raw-response)
+  - [Tool Integration](#tool-integration)
     - [Defining Tools](#defining-tools)
+    - [Tools with Pydantic Models](#tools-with-pydantic-models)
     - [Binding Tools to Models](#binding-tools-to-models)
     - [Streaming Tool Calls](#streaming-tool-calls)
-11. [Complete Examples](#complete-examples)
-12. [Best Practices](#best-practices)
+      - [Accumulating Tool Call Chunks](#accumulating-tool-call-chunks)
+  - [Complete Examples](#complete-examples)
+    - [Translation Chain](#translation-chain)
+    - [Streaming Chat with Memory](#streaming-chat-with-memory)
+    - [Data Extraction with Structured Output](#data-extraction-with-structured-output)
+  - [Best Practices](#best-practices)
+    - [1. Environment Configuration](#1-environment-configuration)
+    - [2. Error Handling](#2-error-handling)
+    - [3. Token Management](#3-token-management)
+    - [4. Reusable Chain Patterns](#4-reusable-chain-patterns)
+    - [5. Logging and Debugging](#5-logging-and-debugging)
+  - [Summary](#summary)
 
 ---
 
@@ -177,10 +207,10 @@ model = init_chat_model("google_genai:gemini-2.5-flash-lite")
 # Azure OpenAI
 os.environ["AZURE_OPENAI_API_KEY"] = "..."
 os.environ["AZURE_OPENAI_ENDPOINT"] = "..."
-os.environ["OPENAI_API_VERSION"] = "2025-03-01-preview"
+os.environ["AZURE_OPENAI_API_VERSION"] = "2025-03-01-preview"
 model = init_chat_model(
-    "azure_openai:gpt-4.1",
-    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
+    f"azure_openai:{os.environ['AZURE_OPENAI_DEPLOYMENT']}",
+    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
 )
 
 # AWS Bedrock
@@ -215,8 +245,8 @@ model = ChatAnthropic(model="claude-sonnet-4-5-20250929")
 # Azure OpenAI
 from langchain_openai import AzureChatOpenAI
 model = AzureChatOpenAI(
-    model="gpt-4.1",
-    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"]
+    model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
+    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"]
 )
 
 # Google Gemini
@@ -259,6 +289,42 @@ model = init_chat_model(
     api_key="YOUR_API_KEY",
 )
 ```
+
+### Azure OpenAI Configuration
+
+Azure OpenAI requires specific environment variables and configuration. Here's a comprehensive setup:
+
+**Required Environment Variables:**
+- `AZURE_OPENAI_API_KEY`: Your Azure OpenAI API key
+- `AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint URL (e.g., `https://your-resource.openai.azure.com/`)
+- `AZURE_OPENAI_API_VERSION`: API version (e.g., `2025-03-01-preview`)
+- `AZURE_OPENAI_DEPLOYMENT`: Your deployment name
+
+**Using init_chat_model (Unified Approach):**
+```python
+import os
+from langchain.chat_models import init_chat_model
+
+# The model string format is: azure_openai:<deployment_name>
+model = init_chat_model(
+    f"azure_openai:{os.environ['AZURE_OPENAI_DEPLOYMENT']}",
+    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
+)
+```
+
+**Using AzureChatOpenAI (Provider-Specific):**
+```python
+from langchain_openai import AzureChatOpenAI
+
+model = AzureChatOpenAI(
+    model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
+    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
+    temperature=0.7,
+    max_tokens=1000,
+)
+```
+
+> **Note:** When using Azure OpenAI, the `model` and `azure_deployment` parameters typically have the same value - your Azure deployment name.
 
 ### Configuration Parameters
 
@@ -319,6 +385,35 @@ first_model.invoke(
     },
 )
 ```
+
+#### Azure OpenAI Runtime Configuration
+
+For Azure OpenAI, runtime model switching works differently because you're switching between Azure deployments rather than model names:
+
+```python
+import os
+from langchain_openai import AzureChatOpenAI
+
+# Create multiple Azure OpenAI models for different deployments
+def get_azure_model(deployment_name: str = None):
+    """Get Azure OpenAI model with optional deployment override."""
+    deployment = deployment_name or os.environ["AZURE_OPENAI_DEPLOYMENT"]
+    return AzureChatOpenAI(
+        model=deployment,
+        azure_deployment=deployment,
+        temperature=0.7,
+    )
+
+# Use default deployment
+model = get_azure_model()
+response = model.invoke("Hello!")
+
+# Use a different deployment
+model_gpt4 = get_azure_model("gpt-4-deployment")
+response = model_gpt4.invoke("Hello!")
+```
+
+> **Note:** Azure OpenAI requires pre-configured deployments in your Azure resource. You cannot dynamically switch to arbitrary model names like with direct OpenAI API access. Plan your deployments in advance based on your application's needs.
 
 ---
 
@@ -604,10 +699,10 @@ async for event in model.astream_events("Hello"):
         print(f"Input: {event['data']['input']}")
 
     elif event["event"] == "on_chat_model_stream":
-        print(f"Token: {event['data']['chunk'].text}")
+        print(f"Token: {event['data']['chunk'].content}")
 
     elif event["event"] == "on_chat_model_end":
-        print(f"Full message: {event['data']['output'].text}")
+        print(f"Full message: {event['data']['output'].content}")
 ```
 
 Example output:
@@ -631,7 +726,7 @@ Build the complete message from chunks:
 full = None
 for chunk in model.stream("What color is the sky?"):
     full = chunk if full is None else full + chunk
-    print(full.text)
+    print(full.content)
 
 # Output:
 # The
@@ -1232,7 +1327,15 @@ def safe_invoke(prompt: str, max_retries: int = 3) -> str:
 For long conversations, implement message trimming:
 
 ```python
-from langchain_core.messages.utils import trim_messages, count_tokens_approximately
+# Import path may vary by LangChain version
+# Try the primary import first, fall back to alternative if needed
+try:
+    from langchain_core.messages.utils import trim_messages, count_tokens_approximately
+except ImportError:
+    from langchain_core.messages import trim_messages
+    # Define a simple approximate counter if not available
+    def count_tokens_approximately(messages):
+        return sum(len(str(m.content).split()) for m in messages)
 
 def get_trimmed_messages(messages: list, max_tokens: int = 4000) -> list:
     """Trim messages to fit within token limit."""
@@ -1244,6 +1347,8 @@ def get_trimmed_messages(messages: list, max_tokens: int = 4000) -> list:
         start_on="human",  # Always start with a human message
     )
 ```
+
+> **Version Compatibility:** The import path for `trim_messages` may vary between LangChain versions. The example above includes a fallback pattern for compatibility.
 
 ### 4. Reusable Chain Patterns
 
@@ -1273,15 +1378,23 @@ summary = summarizer.invoke({
 
 ### 5. Logging and Debugging
 
+For OpenAI models, you can track token usage and costs:
+
 ```python
 from langchain.callbacks import get_openai_callback
 
-# Track token usage
+# Track token usage (OpenAI direct API only)
 with get_openai_callback() as cb:
     response = model.invoke("Tell me a joke")
     print(f"Tokens used: {cb.total_tokens}")
     print(f"Cost: ${cb.total_cost:.4f}")
 ```
+
+> **Note for Azure OpenAI users:** The `get_openai_callback()` is designed for direct OpenAI API usage. For Azure OpenAI, token usage is available in the response metadata:
+> ```python
+> response = model.invoke("Tell me a joke")
+> print(f"Token usage: {response.response_metadata.get('token_usage', {})}")
+> ```
 
 ---
 
