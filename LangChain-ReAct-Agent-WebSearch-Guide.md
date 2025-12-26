@@ -32,31 +32,13 @@ A **ReAct Agent** combines **Reasoning** and **Acting** in an iterative loop:
 4. **Repeat**: The agent reasons about the result and decides if more actions are needed
 5. **Respond**: When enough information is gathered, the agent provides a final answer
 
-```
-User Question
-     │
-     ▼
-┌─────────────┐
-│   Reason    │◄──────────────┐
-│  (Think)    │               │
-└─────────────┘               │
-     │                        │
-     ▼                        │
-┌─────────────┐               │
-│    Act      │               │
-│ (Use Tool)  │               │
-└─────────────┘               │
-     │                        │
-     ▼                        │
-┌─────────────┐               │
-│  Observe    │───────────────┘
-│  (Results)  │      More info needed?
-└─────────────┘
-     │
-     ▼ (Done)
-┌─────────────┐
-│  Response   │
-└─────────────┘
+```mermaid
+flowchart TD
+    A[User Question] --> B[Reason<br/>Think]
+    B --> C[Act<br/>Use Tool]
+    C --> D[Observe<br/>Results]
+    D -->|More info needed?| B
+    D -->|Done| E[Response]
 ```
 
 ---

@@ -27,23 +27,15 @@ This guide explains how to build a ReAct (Reasoning + Acting) agent using the **
 
 A **LangGraph ReAct Agent** implements the ReAct (Reasoning + Acting) pattern using an explicit graph structure:
 
-```
-                    ┌─────────────────────────────────────┐
-                    │           StateGraph                │
-                    │                                     │
-┌─────────┐         │  ┌─────────┐      ┌─────────────┐  │
-│  User   │────────►│  │  Agent  │◄────►│    Tools    │  │
-│  Input  │         │  │  (LLM)  │      │ (Web Search)│  │
-└─────────┘         │  └────┬────┘      └─────────────┘  │
-                    │       │                             │
-                    │       ▼                             │
-                    │  ┌─────────┐                        │
-                    │  │  END    │                        │
-                    │  └─────────┘                        │
-                    │                                     │
-                    │  State: { messages, ... }           │
-                    │  Checkpointer: Memory/PostgreSQL    │
-                    └─────────────────────────────────────┘
+```mermaid
+flowchart LR
+    A["User<br/>Input"] --> B
+    subgraph StateGraph
+        B["Agent<br/>(LLM)"] <--> C["Tools<br/>(Web Search)"]
+        B --> D["END"]
+        E["State: { messages, ... }"]
+        F["Checkpointer: Memory/PostgreSQL"]
+    end
 ```
 
 **Key LangGraph Advantages:**
