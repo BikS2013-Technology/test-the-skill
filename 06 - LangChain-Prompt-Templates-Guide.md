@@ -50,7 +50,7 @@ LangChain provides structured message types for building conversations:
 ### Core Message Classes
 
 ```python
-from langchain.messages import (
+from langchain_core.messages import (
     SystemMessage,    # Instructions for the AI
     HumanMessage,     # User input
     AIMessage,        # AI responses
@@ -63,7 +63,7 @@ from langchain.messages import (
 Sets the behavior, persona, or instructions for the AI:
 
 ```python
-from langchain.messages import SystemMessage
+from langchain_core.messages import SystemMessage
 
 system_msg = SystemMessage("You are a helpful assistant that translates English to French.")
 ```
@@ -73,7 +73,7 @@ system_msg = SystemMessage("You are a helpful assistant that translates English 
 Represents user input:
 
 ```python
-from langchain.messages import HumanMessage
+from langchain_core.messages import HumanMessage
 
 human_msg = HumanMessage("Translate: I love programming.")
 ```
@@ -83,7 +83,7 @@ human_msg = HumanMessage("Translate: I love programming.")
 Represents AI responses (useful for conversation history):
 
 ```python
-from langchain.messages import AIMessage
+from langchain_core.messages import AIMessage
 
 ai_msg = AIMessage("J'adore la programmation.")
 ```
@@ -92,9 +92,9 @@ ai_msg = AIMessage("J'adore la programmation.")
 
 ```python
 from langchain.chat_models import init_chat_model
-from langchain.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
-model = init_chat_model("claude-sonnet-4-5-20250929")
+model = init_chat_model("gpt-4o")
 
 # Build conversation with message objects
 messages = [
@@ -117,7 +117,7 @@ For straightforward, single-turn interactions:
 ```python
 from langchain.chat_models import init_chat_model
 
-model = init_chat_model("gpt-4.1")
+model = init_chat_model("gpt-4o")
 
 # Direct text prompt
 response = model.invoke("Write a haiku about spring")
@@ -143,7 +143,7 @@ response = model.invoke(messages)
 More structured and type-safe:
 
 ```python
-from langchain.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 messages = [
     SystemMessage("You are a poetry expert"),
@@ -153,6 +153,48 @@ messages = [
 
 response = model.invoke(messages)
 ```
+
+### 4. Using Azure OpenAI
+
+For enterprise environments using Azure OpenAI, configure your model as follows:
+
+```python
+import os
+from langchain_openai import AzureChatOpenAI
+
+# Ensure these environment variables are set:
+# AZURE_OPENAI_API_KEY - Your Azure OpenAI API key
+# AZURE_OPENAI_ENDPOINT - Your Azure OpenAI endpoint URL
+# AZURE_OPENAI_API_VERSION - API version (e.g., "2024-02-15-preview")
+# AZURE_OPENAI_DEPLOYMENT - Your deployment name
+
+model = AzureChatOpenAI(
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
+    api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+)
+
+# Use the same way as other chat models
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hello!"}
+]
+
+response = model.invoke(messages)
+print(response.content)
+```
+
+**Environment Variables (.env file):**
+
+```bash
+# Azure OpenAI Configuration
+AZURE_OPENAI_API_KEY=your-api-key-here
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+```
+
+> **Note**: All examples in this guide using `init_chat_model()` can be replaced with `AzureChatOpenAI()` for Azure OpenAI deployments. The prompt templates and message handling work identically regardless of which model provider you use.
 
 ---
 
@@ -175,7 +217,7 @@ prompt = ChatPromptTemplate.from_messages([
 formatted = prompt.invoke({"question": "What is Python?"})
 
 # Use with model
-model = init_chat_model("gpt-4.1")
+model = init_chat_model("gpt-4o")
 response = model.invoke(formatted)
 ```
 
@@ -210,7 +252,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "Tell me a joke about {topic}")
 ])
 
-model = init_chat_model("gpt-4.1")
+model = init_chat_model("gpt-4o")
 
 # Create a chain
 chain = prompt | model
@@ -296,7 +338,7 @@ prompt = ChatPromptTemplate.from_messages([
 
 ```python
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 
 prompt = ChatPromptTemplate.from_messages([
     ("system", "You are a helpful assistant"),
@@ -343,7 +385,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("user", "{input}")
 ])
 
-model = init_chat_model("claude-sonnet-4-5-20250929")
+model = init_chat_model("gpt-4o")
 chain = prompt | model
 
 # Maintain conversation history
@@ -537,11 +579,13 @@ agent = create_agent(model, tools=[], middleware=[prompt_with_context])
 
 ### Static Prompts with create_react_agent
 
+> **Note:** The `create_react_agent` function from `langgraph.prebuilt` may show a deprecation warning in some versions. Check the [LangGraph documentation](https://langchain-ai.github.io/langgraph/) for the latest recommended import path.
+
 ```python
 from langgraph.prebuilt import create_react_agent
 
 agent = create_react_agent(
-    model="anthropic:claude-3-7-sonnet-latest",
+    model=model,  # Pass your configured model instance
     tools=[get_weather],
     # Static prompt - never changes
     prompt="Never answer questions about the weather."
@@ -556,7 +600,7 @@ agent.invoke(
 
 ```python
 from langgraph.graph import MessagesState
-from langchain.messages import SystemMessage
+from langchain_core.messages import SystemMessage
 
 def llm_call(state: MessagesState):
     """LLM node with system prompt."""
@@ -659,7 +703,7 @@ response = chain.invoke({"topic": "cats"})
 ```python
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chat_models import init_chat_model
-from langchain.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage
 
 # Define the prompt template
 translation_prompt = ChatPromptTemplate.from_messages([
@@ -672,7 +716,7 @@ Only provide the translation, no explanations."""),
 ])
 
 # Create the chain
-model = init_chat_model("claude-sonnet-4-5-20250929")
+model = init_chat_model("gpt-4o")
 chain = translation_prompt | model
 
 # Translation function with history
@@ -704,11 +748,14 @@ print(translator.translate("I'm learning French."))
 
 ### Example 2: Customer Support Agent
 
+> **Note:** The `create_agent` API and context passing mechanism may vary between LangChain versions. This example shows the pattern for dynamic prompt generation based on runtime context. Always check the latest LangChain documentation for current best practices.
+
 ```python
 from dataclasses import dataclass
 from langchain.agents import create_agent
 from langchain.agents.middleware import dynamic_prompt, ModelRequest
-from langchain.tools import tool
+from langchain_core.tools import tool
+from langchain.chat_models import init_chat_model
 
 @dataclass
 class CustomerContext:
@@ -749,22 +796,27 @@ Your goal is to help customers with their inquiries efficiently and professional
 
     return base
 
+# Create a model instance
+model = init_chat_model("gpt-4o")
+
 # Create the support agent
 support_agent = create_agent(
-    model="gpt-4o",
+    model=model,
     tools=[lookup_order, check_account],
     middleware=[support_prompt],
     context_schema=CustomerContext
 )
 
-# Usage
+# Usage - pass context through config for better compatibility
+customer_ctx = CustomerContext(
+    customer_id="C001",
+    subscription_tier="premium",
+    account_age_days=450
+)
+
 result = support_agent.invoke(
     {"messages": [{"role": "user", "content": "Where is my order #12345?"}]},
-    context=CustomerContext(
-        customer_id="C001",
-        subscription_tier="premium",
-        account_age_days=450
-    )
+    config={"configurable": {"context": customer_ctx}}
 )
 ```
 
@@ -918,6 +970,115 @@ def prepare_history(messages, max_tokens=2000):
         max_tokens=max_tokens,
         start_on="human"
     )
+```
+
+### 7. Validate Environment Variables
+
+Always validate that required environment variables are set before initializing models:
+
+```python
+import os
+
+def get_required_env(name: str) -> str:
+    """Get required environment variable or raise error."""
+    value = os.environ.get(name)
+    if not value:
+        raise ValueError(
+            f"Missing required environment variable: {name}. "
+            f"Please set it before running the application."
+        )
+    return value
+
+# For OpenAI
+def get_openai_model():
+    from langchain.chat_models import init_chat_model
+
+    # Validate API key exists
+    get_required_env("OPENAI_API_KEY")
+    return init_chat_model("gpt-4o")
+
+# For Azure OpenAI
+def get_azure_model():
+    from langchain_openai import AzureChatOpenAI
+
+    # Validate all required variables
+    endpoint = get_required_env("AZURE_OPENAI_ENDPOINT")
+    deployment = get_required_env("AZURE_OPENAI_DEPLOYMENT")
+    api_version = get_required_env("AZURE_OPENAI_API_VERSION")
+    get_required_env("AZURE_OPENAI_API_KEY")  # Validates key exists
+
+    return AzureChatOpenAI(
+        azure_endpoint=endpoint,
+        azure_deployment=deployment,
+        api_version=api_version,
+    )
+```
+
+### 8. Handle API Errors Gracefully
+
+Wrap LLM calls with proper error handling for production use:
+
+```python
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.exceptions import OutputParserException
+import logging
+
+logger = logging.getLogger(__name__)
+
+def invoke_with_retry(chain, inputs: dict, max_retries: int = 3):
+    """Invoke chain with retry logic and error handling."""
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            return chain.invoke(inputs)
+        except OutputParserException as e:
+            logger.warning(f"Output parsing failed (attempt {attempt + 1}): {e}")
+            last_error = e
+        except Exception as e:
+            error_msg = str(e).lower()
+
+            # Rate limiting - wait and retry
+            if "rate_limit" in error_msg or "429" in error_msg:
+                import time
+                wait_time = 2 ** attempt  # Exponential backoff
+                logger.warning(f"Rate limited, waiting {wait_time}s...")
+                time.sleep(wait_time)
+                last_error = e
+                continue
+
+            # Authentication errors - don't retry
+            if "authentication" in error_msg or "401" in error_msg:
+                logger.error(f"Authentication failed: {e}")
+                raise
+
+            # Context length exceeded
+            if "context_length" in error_msg or "maximum context" in error_msg:
+                logger.error(f"Context too long: {e}")
+                raise
+
+            # Other errors - log and retry
+            logger.warning(f"API error (attempt {attempt + 1}): {e}")
+            last_error = e
+
+    raise RuntimeError(f"Failed after {max_retries} attempts: {last_error}")
+
+# Usage example
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    ("user", "{question}")
+])
+
+model = get_azure_model()  # Uses validation from above
+chain = prompt | model
+
+try:
+    response = invoke_with_retry(chain, {"question": "What is Python?"})
+    print(response.content)
+except RuntimeError as e:
+    print(f"Failed to get response: {e}")
+except ValueError as e:
+    print(f"Configuration error: {e}")
 ```
 
 ---
