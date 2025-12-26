@@ -54,6 +54,9 @@ pip install langchain
 # Web search tool (Tavily)
 pip install langchain-tavily
 
+# Community tools (includes TavilySearchResults alternative)
+pip install langchain-community
+
 # LLM provider (choose one or more)
 pip install langchain-openai      # OpenAI
 pip install langchain-anthropic   # Anthropic Claude
@@ -67,7 +70,7 @@ pip install langchain-google-genai # Google Gemini
 uv init my-search-agent
 cd my-search-agent
 
-uv add langchain langchain-tavily
+uv add langchain langchain-tavily langchain-community
 uv add langchain-anthropic  # or your preferred provider
 ```
 
@@ -89,6 +92,12 @@ os.environ["OPENAI_API_KEY"] = "sk-..."
 os.environ["ANTHROPIC_API_KEY"] = "sk-ant-..."
 os.environ["GOOGLE_API_KEY"] = "..."
 
+# Azure OpenAI (alternative to direct OpenAI)
+os.environ["AZURE_OPENAI_API_KEY"] = "your-azure-key"
+os.environ["AZURE_OPENAI_ENDPOINT"] = "https://your-resource.openai.azure.com/"
+os.environ["AZURE_OPENAI_API_VERSION"] = "2024-02-15-preview"
+os.environ["AZURE_OPENAI_DEPLOYMENT"] = "your-deployment-name"
+
 # Tavily Search API
 os.environ["TAVILY_API_KEY"] = "tvly-..."
 ```
@@ -99,11 +108,45 @@ Or use a `.env` file:
 # .env
 ANTHROPIC_API_KEY=sk-ant-...
 TAVILY_API_KEY=tvly-...
+
+# For Azure OpenAI (alternative to direct OpenAI)
+AZURE_OPENAI_API_KEY=your-azure-key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT=your-deployment-name
 ```
 
 ```python
 from dotenv import load_dotenv
 load_dotenv()
+```
+
+### Using Azure OpenAI
+
+If you're using Azure OpenAI instead of direct OpenAI, you have two options:
+
+**Option 1: Using init_chat_model with model_provider**
+
+```python
+from langchain.chat_models import init_chat_model
+
+model = init_chat_model(
+    os.environ["AZURE_OPENAI_DEPLOYMENT"],
+    model_provider="azure_openai"
+)
+```
+
+**Option 2: Using AzureChatOpenAI directly**
+
+```python
+from langchain_openai import AzureChatOpenAI
+
+model = AzureChatOpenAI(
+    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    api_key=os.environ["AZURE_OPENAI_API_KEY"],
+    api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+)
 ```
 
 ---
@@ -513,7 +556,8 @@ def chat():
 
         print("\nAssistant: ", end="")
 
-        # Stream the response
+        # Stream the response and capture the final result
+        final_result = None
         for step in agent.stream(
             {"messages": [{"role": "user", "content": user_input}]},
             stream_mode="values"
@@ -521,12 +565,10 @@ def chat():
             message = step["messages"][-1]
             if hasattr(message, 'tool_calls') and message.tool_calls:
                 print(f"\n[Searching...]", end="")
+            final_result = step
 
-        # Get final response
-        result = agent.invoke({
-            "messages": [{"role": "user", "content": user_input}]
-        })
-        print(result["messages"][-1].content)
+        # Print the final response from the stream
+        print(final_result["messages"][-1].content)
 
 if __name__ == "__main__":
     chat()
@@ -600,6 +642,7 @@ def research(topic: str) -> str:
     print(f"Researching: {topic}")
     print('='*60)
 
+    final_result = None
     for step in agent.stream(
         {"messages": [{"role": "user", "content": topic}]},
         stream_mode="values"
@@ -608,12 +651,9 @@ def research(topic: str) -> str:
         if hasattr(message, 'tool_calls') and message.tool_calls:
             for tc in message.tool_calls:
                 print(f"  → Using {tc['name']}...")
+        final_result = step
 
-    result = agent.invoke({
-        "messages": [{"role": "user", "content": topic}]
-    })
-
-    return result["messages"][-1].content
+    return final_result["messages"][-1].content
 
 # Example research queries
 print(research("What are the latest breakthroughs in quantum computing in 2024?"))
