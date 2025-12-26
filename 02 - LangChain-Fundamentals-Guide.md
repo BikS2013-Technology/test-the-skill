@@ -694,7 +694,7 @@ for chunk in model.stream("Why do parrots talk?"):
 For more control over streaming events:
 
 ```python
-async for event in model.astream_events("Hello"):
+async for event in model.astream_events("Hello", version="v2"):
     if event["event"] == "on_chat_model_start":
         print(f"Input: {event['data']['input']}")
 
@@ -751,13 +751,13 @@ responses = model.batch([
     "What is quantum computing?"
 ])
 
-# Batch as completed (returns results as they finish)
-for response in model.batch_as_completed([
+# Batch as completed (returns results as they finish with their index)
+for idx, response in model.batch_as_completed([
     "Why do parrots have colorful feathers?",
     "How do airplanes fly?",
     "What is quantum computing?"
 ]):
-    print(response)
+    print(f"Response {idx}: {response.content}")
 ```
 
 ---

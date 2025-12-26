@@ -15,7 +15,7 @@ Original example from guide (lines 174-210):
 import sys
 sys.path.insert(0, '/Users/giorgosmarinos/aiwork/TrainingMaterial/LangGraph ReAct Agent')
 
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_tavily import TavilySearch
 

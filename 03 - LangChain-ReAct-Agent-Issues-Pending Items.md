@@ -14,6 +14,37 @@ This document tracks issues, inconsistencies, and pending items discovered durin
 
 ## Completed/Resolved Items
 
+### Issue #8: Double Invocation in Best Practices - Log Tool Usage Function (HIGH) - FIXED
+
+**Location:** Lines 788-809 (`invoke_with_logging` function in Best Practices section)
+
+**Problem:** The `invoke_with_logging()` function streamed the response AND THEN called `invoke()` separately, causing the agent to process the question twice. This was the same bug that was fixed in Examples 2 and 3 (Issues #3 and #4), but was missed in the Best Practices section.
+
+**Resolution:** Fixed on December 26, 2025. The code now captures the final result from the stream instead of invoking separately.
+
+**Fixed Code:**
+```python
+def invoke_with_logging(agent, question: str):
+    """Invoke agent with tool usage logging."""
+    print(f"Question: {question}\n")
+
+    final_result = None
+    for step in agent.stream(
+        {"messages": [{"role": "user", "content": question}]},
+        stream_mode="values"
+    ):
+        message = step["messages"][-1]
+        if hasattr(message, 'tool_calls') and message.tool_calls:
+            for tc in message.tool_calls:
+                print(f"[Tool Call] {tc['name']}: {tc['args']}")
+        final_result = step
+
+    print(f"\nFinal Answer:\n{final_result['messages'][-1].content}")
+    return final_result
+```
+
+---
+
 ### Issue #7: No Azure OpenAI Instructions - FIXED
 
 **Location:** Lines 87-150 (Setting Up the Environment)
@@ -157,6 +188,7 @@ The following test scripts were created to verify the document examples:
 
 | Priority | Issue | Status |
 |----------|-------|--------|
+| HIGH | Issue #8: Double invocation in Best Practices | ✅ Fixed - December 26, 2025 |
 | HIGH | Issue #3: Double invocation in Example 2 | ✅ Fixed - December 26, 2025 |
 | HIGH | Issue #4: Double invocation in Example 3 | ✅ Fixed - December 26, 2025 |
 | MEDIUM | Issue #6: Missing langchain-community package | ✅ Fixed - December 26, 2025 |

@@ -790,6 +790,7 @@ def invoke_with_logging(agent, question: str):
     """Invoke agent with tool usage logging."""
     print(f"Question: {question}\n")
 
+    final_result = None
     for step in agent.stream(
         {"messages": [{"role": "user", "content": question}]},
         stream_mode="values"
@@ -799,13 +800,10 @@ def invoke_with_logging(agent, question: str):
         if hasattr(message, 'tool_calls') and message.tool_calls:
             for tc in message.tool_calls:
                 print(f"[Tool Call] {tc['name']}: {tc['args']}")
+        final_result = step
 
-    result = agent.invoke({
-        "messages": [{"role": "user", "content": question}]
-    })
-
-    print(f"\nFinal Answer:\n{result['messages'][-1].content}")
-    return result
+    print(f"\nFinal Answer:\n{final_result['messages'][-1].content}")
+    return final_result
 ```
 
 ---

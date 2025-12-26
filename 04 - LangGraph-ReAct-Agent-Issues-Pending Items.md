@@ -33,6 +33,24 @@ All major features in the guide were tested and work correctly with Azure OpenAI
 
 ## Completed Items
 
+### ISSUE-007: Test Scripts Use Deprecated Import Path (LOW)
+- **Severity**: Low
+- **Location**: All test scripts in `LangGraph ReAct Agent/test_scripts/`
+- **Problem**: The guide was updated (ISSUE-001) to use the new import path `from langchain.agents import create_react_agent`, but all test scripts still used the deprecated import `from langgraph.prebuilt import create_react_agent`.
+- **Fix Applied**: Updated all 11 test scripts to use the new import path:
+  - `test_01_basic_usage.py`
+  - `test_02_with_system_prompt.py`
+  - `test_03_with_memory.py`
+  - `test_06_custom_tools.py`
+  - `test_07_streaming.py`
+  - `test_08_async_streaming.py`
+  - `test_09_dynamic_prompts.py`
+  - `test_10_graph_visualization.py`
+  - `test_11_simple_research_agent.py`
+  - `test_12_interactive_chat.py`
+  - `test_14_best_practices.py`
+- **Status**: **COMPLETED** (December 26, 2025)
+
 ### ISSUE-001: Deprecated Import Path for create_react_agent
 - **Severity**: High
 - **Location**: Guide lines 123, 151, 175, 419, 486, 517, 540, 597, 624, 698, 733, 1022

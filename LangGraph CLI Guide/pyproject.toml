@@ -1,0 +1,18 @@
+[project]
+name = "langgraph-cli-guide"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain-openai>=1.1.6",
+    "langgraph>=1.0.5",
+    "langgraph-cli[inmem]>=0.4.11",
+    "typing-extensions>=4.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.2",
+    "python-dotenv>=1.2.1",
+]

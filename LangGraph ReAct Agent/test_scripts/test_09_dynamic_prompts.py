@@ -14,7 +14,7 @@ sys.path.insert(0, '/Users/giorgosmarinos/aiwork/TrainingMaterial/LangGraph ReAc
 
 from langchain_core.messages import AnyMessage
 from langchain_tavily import TavilySearch
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
 from config import get_azure_model, validate_environment

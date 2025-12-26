@@ -114,9 +114,15 @@ The `langgraph.json` file is the central configuration file for your LangGraph a
   "graphs": {
     "my_agent": "./your_package/your_file.py:agent"
   },
-  "env": "./.env"
+  "env": "./.env",
+  "image_distro": "wolfi"
 }
 ```
+
+> **Security Recommendation**: Use `"image_distro": "wolfi"` for production deployments. [Wolfi](https://wolfi.dev/) is a security-oriented, minimal Linux distribution designed for containers that provides:
+> - Smaller image sizes (faster deployments)
+> - Fewer vulnerabilities (minimal attack surface)
+> - Regular security updates
 
 ### JavaScript Example
 
@@ -344,6 +350,134 @@ my-langgraph-app/
 └── .env                  # Environment variables
 ```
 
+### Python Dependencies
+
+When using UV (recommended), initialize your project and add the required dependencies:
+
+```bash
+# Initialize project
+uv init
+
+# Create virtual environment
+uv venv
+
+# Add core dependencies
+uv add "langgraph-cli[inmem]" langgraph langchain-openai
+
+# Add development dependencies
+uv add --dev pytest python-dotenv
+```
+
+This creates a `pyproject.toml` with the following dependencies:
+
+```toml
+[project]
+name = "my-langgraph-app"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph-cli[inmem]>=0.4.0",
+    "langgraph>=1.0.0",
+    "langchain-openai>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+    "python-dotenv>=1.0.0",
+]
+```
+
+Alternatively, if using `requirements.txt`:
+
+```
+langgraph-cli[inmem]>=0.4.0
+langgraph>=1.0.0
+langchain-openai>=1.0.0
+python-dotenv>=1.0.0
+```
+
+### JavaScript Dependencies
+
+For JavaScript/TypeScript projects, your `package.json` should include:
+
+```json
+{
+  "name": "my-langgraph-app",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@langchain/langgraph": "^0.2.0",
+    "@langchain/openai": "^0.3.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@langchain/langgraph-cli": "^0.0.1",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
+  }
+}
+```
+
+### Environment Variables Configuration
+
+Proper environment variable management is critical for LangGraph applications. The `.env` file contains sensitive credentials and configuration settings.
+
+**Example .env File:**
+
+```bash
+# LLM Provider Configuration
+# Choose ONE of the following configurations:
+
+# Option 1: OpenAI
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# Option 2: Azure OpenAI
+AZURE_OPENAI_API_KEY=your-azure-api-key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+
+# LangSmith (optional but recommended for tracing)
+LANGSMITH_API_KEY=your-langsmith-api-key
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_PROJECT=my-langgraph-project
+```
+
+**Best Practices:**
+
+1. **Never commit `.env` files** - Add `.env` to your `.gitignore`
+2. **Validate required variables** - Check for missing credentials at startup
+3. **Use environment-specific files** - `.env.development`, `.env.production`
+4. **Document required variables** - Create a `.env.example` template
+
+**Environment Variable Validation Pattern:**
+
+```python
+import os
+
+def validate_env_vars(required_vars: list[str]) -> None:
+    """
+    Validate that all required environment variables are set.
+
+    Raises:
+        ValueError: If any required variable is missing.
+    """
+    missing = [var for var in required_vars if not os.environ.get(var)]
+    if missing:
+        raise ValueError(
+            f"Missing required environment variables: {', '.join(missing)}"
+        )
+
+# Usage at application startup
+validate_env_vars([
+    "AZURE_OPENAI_API_KEY",
+    "AZURE_OPENAI_ENDPOINT",
+    "AZURE_OPENAI_API_VERSION",
+    "AZURE_OPENAI_DEPLOYMENT",
+])
+```
+
 ### Example Agent File (Python)
 
 ```python
@@ -366,6 +500,95 @@ builder.add_edge("agent", END)
 
 # Compile the graph - this is what langgraph.json references
 graph = builder.compile()
+```
+
+### Example Agent with Azure OpenAI
+
+For enterprise environments using Azure OpenAI, here's how to configure your agent:
+
+**Environment Variables (.env)**
+
+```bash
+# Azure OpenAI Configuration
+AZURE_OPENAI_API_KEY=your-api-key-here
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+```
+
+**Agent Implementation (my_agent/azure_agent.py)**
+
+```python
+# my_agent/azure_agent.py
+import os
+from typing import Annotated
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langchain_openai import AzureChatOpenAI
+
+
+class AgentState(TypedDict):
+    """State definition for the agent graph with message handling."""
+    messages: Annotated[list, add_messages]
+
+
+def get_azure_llm() -> AzureChatOpenAI:
+    """
+    Create and return an Azure OpenAI chat model.
+
+    Raises:
+        ValueError: If required environment variables are not set.
+    """
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+    api_version = os.environ.get("AZURE_OPENAI_API_VERSION")
+    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT")
+
+    if not api_key:
+        raise ValueError("AZURE_OPENAI_API_KEY environment variable is not set")
+    if not endpoint:
+        raise ValueError("AZURE_OPENAI_ENDPOINT environment variable is not set")
+    if not api_version:
+        raise ValueError("AZURE_OPENAI_API_VERSION environment variable is not set")
+    if not deployment:
+        raise ValueError("AZURE_OPENAI_DEPLOYMENT environment variable is not set")
+
+    return AzureChatOpenAI(
+        azure_endpoint=endpoint,
+        azure_deployment=deployment,
+        api_version=api_version,
+        api_key=api_key,
+    )
+
+
+def chatbot_node(state: AgentState) -> dict:
+    """Chatbot node that uses Azure OpenAI to generate responses."""
+    llm = get_azure_llm()
+    response = llm.invoke(state["messages"])
+    return {"messages": [response]}
+
+
+# Create the graph
+builder = StateGraph(AgentState)
+builder.add_node("chatbot", chatbot_node)
+builder.add_edge(START, "chatbot")
+builder.add_edge("chatbot", END)
+
+# Compile the graph
+azure_graph = builder.compile()
+```
+
+**langgraph.json for Azure Agent**
+
+```json
+{
+  "dependencies": ["./my_agent"],
+  "graphs": {
+    "azure_agent": "./my_agent/azure_agent.py:azure_graph"
+  },
+  "env": ".env"
+}
 ```
 
 ---
@@ -496,7 +719,7 @@ npm install -D vitest
 ```typescript
 import { test, expect } from 'vitest';
 import { StateGraph, START, END, MemorySaver } from '@langchain/langgraph';
-import { z } from "zod/v4";
+import { z } from "zod";
 
 const State = z.object({
   my_key: z.string(),
@@ -521,6 +744,14 @@ test('basic agent execution', async () => {
 ```
 
 ### Testing Deployed API
+
+To test a deployed LangGraph API server, you can use either the Python SDK or cURL.
+
+> **Note**: The `langgraph-sdk` package is different from the `langgraph` package:
+> - **`langgraph`**: Used for building and defining graphs locally
+> - **`langgraph-sdk`**: A lightweight client library for interacting with deployed LangGraph API servers
+>
+> You only need `langgraph-sdk` when calling a remote/deployed LangGraph server. For local development and testing, use the `langgraph` package directly.
 
 #### Using Python SDK
 
@@ -570,6 +801,52 @@ curl -s --request POST \
         },
         "stream_mode": "updates"
     }'
+```
+
+#### Understanding Stream Response Format
+
+The streaming API returns Server-Sent Events (SSE). Each event consists of:
+- **`event:`** - The event type
+- **`data:`** - JSON payload
+- **`id:`** - Unique event identifier
+
+**Example Response:**
+
+```
+event: metadata
+data: {"run_id":"019b5b5c-5c59-7452-8688-0adc55323fe7","attempt":1}
+id: 1766764338976-0
+
+event: updates
+data: {"agent":{"messages":["Hello, world!","Hello from agent!"]}}
+id: 1766764339042-0
+```
+
+**Stream Modes:**
+
+| Mode | Description |
+|------|-------------|
+| `updates` | Returns state updates from each node as they complete |
+| `values` | Returns the full state after each node execution |
+| `messages` | Returns individual messages as they are generated (for chat applications) |
+| `events` | Returns all internal events (most verbose) |
+
+**Parsing SSE in Python:**
+
+```python
+import httpx
+
+response = httpx.post(
+    f"{deployment_url}/runs/stream",
+    json={"assistant_id": "agent", "input": {...}, "stream_mode": "updates"},
+    headers={"X-Api-Key": api_key},
+)
+
+for line in response.iter_lines():
+    if line.startswith("data: "):
+        import json
+        data = json.loads(line[6:])
+        print(data)
 ```
 
 ---

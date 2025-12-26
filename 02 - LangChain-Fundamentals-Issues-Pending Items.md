@@ -1,6 +1,6 @@
 # Issues - Pending Items
 
-**Last Updated:** December 26, 2025
+**Last Updated:** December 26, 2025 (Updated with document vs test script comparison)
 
 ---
 
@@ -8,7 +8,16 @@
 
 ### LangChain Fundamentals Guide Issues
 
-#### 6. Model Names May Be Outdated (LOW)
+#### 1. `content_blocks` Attribute May Not Exist (LOW)
+**Location:** Line 739
+**Issue:** The document shows `print(full.content_blocks)` but this attribute may not be available for all providers (especially Azure OpenAI) or LangChain versions.
+**Recommendation:** Add a defensive check or note about provider-specific availability:
+```python
+if hasattr(full, 'content_blocks'):
+    print(full.content_blocks)
+```
+
+#### 2. Model Names May Be Outdated (LOW)
 **Location:** Various (lines 167, 171, 175, etc.)
 **Issue:** Model names like `gpt-4.1`, `gpt-5-nano`, `claude-sonnet-4-5-20250929` are used, which may not match current API model names.
 **Recommendation:** Add a note that model names should be verified against current provider documentation.
@@ -57,6 +66,23 @@
 - Explanation that Azure uses deployments, not model names
 - Factory function pattern for switching between Azure deployments
 - Note about pre-configuring deployments in Azure resource
+
+#### 8. `batch_as_completed` Return Format Incorrect (HIGH) - FIXED
+**Location:** Lines 754-760
+**Issue:** The document showed iterating over responses directly (`for response in model.batch_as_completed([...])`) but `batch_as_completed` returns tuples of `(index, response)`.
+**Resolution:** Updated to correctly unpack the tuple:
+```python
+for idx, response in model.batch_as_completed([...]):
+    print(f"Response {idx}: {response.content}")
+```
+
+#### 9. `astream_events` Missing Version Parameter (MEDIUM) - FIXED
+**Location:** Line 697
+**Issue:** The document showed `model.astream_events("Hello")` without the required `version` parameter.
+**Resolution:** Added the version parameter:
+```python
+async for event in model.astream_events("Hello", version="v2"):
+```
 
 ---
 

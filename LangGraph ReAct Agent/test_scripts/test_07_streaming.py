@@ -12,7 +12,7 @@ Original examples from guide (lines 418-480):
 import sys
 sys.path.insert(0, '/Users/giorgosmarinos/aiwork/TrainingMaterial/LangGraph ReAct Agent')
 
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langchain_tavily import TavilySearch
 
 from config import get_azure_model, validate_environment
