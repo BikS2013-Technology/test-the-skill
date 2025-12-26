@@ -75,6 +75,9 @@ uv add langchain-google-genai # Google Gemini
 
 # Additional utilities
 uv add langchain-core
+
+# Optional: For ASCII graph visualization
+uv add grandalf
 ```
 
 ---
@@ -111,6 +114,60 @@ from dotenv import load_dotenv
 load_dotenv()
 ```
 
+### Using Different LLM Providers
+
+The examples in this guide use Anthropic's Claude models, but you can easily substitute other LLM providers:
+
+#### Anthropic Claude
+
+```python
+from langchain_anthropic import ChatAnthropic
+
+model = ChatAnthropic(model="claude-sonnet-4-20250514")
+# or for faster responses:
+model = ChatAnthropic(model="claude-3-5-haiku-latest")
+```
+
+#### OpenAI
+
+```python
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(model="gpt-4o")
+# or for faster responses:
+model = ChatOpenAI(model="gpt-4o-mini")
+```
+
+#### Azure OpenAI
+
+```python
+from langchain_openai import AzureChatOpenAI
+
+model = AzureChatOpenAI(
+    azure_deployment="your-deployment-name",
+    api_version="2024-02-15-preview",
+    azure_endpoint="https://your-resource.openai.azure.com/"
+)
+```
+
+Required environment variables for Azure:
+```bash
+AZURE_OPENAI_API_KEY=your-api-key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+```
+
+#### Google Gemini
+
+```python
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+model = ChatGoogleGenerativeAI(model="gemini-1.5-pro")
+```
+
+> **Note:** Throughout this guide, replace `ChatAnthropic(model="claude-sonnet-4-20250514")` with your preferred model initialization from the examples above.
+
 ---
 
 ## Approach 1: Using the Prebuilt `create_react_agent`
@@ -120,7 +177,7 @@ LangGraph provides a prebuilt `create_react_agent` function for quick agent crea
 ### Basic Usage
 
 ```python
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langchain_anthropic import ChatAnthropic
 from langchain_tavily import TavilySearch
 
@@ -148,7 +205,7 @@ print(result["messages"][-1].content)
 ### With System Prompt
 
 ```python
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langchain_anthropic import ChatAnthropic
 from langchain_tavily import TavilySearch
 
@@ -172,7 +229,7 @@ print(result["messages"][-1].content)
 ### With Memory (Checkpointer)
 
 ```python
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_anthropic import ChatAnthropic
 from langchain_tavily import TavilySearch
@@ -328,18 +385,20 @@ print(result["messages"][-1].content)
 ```python
 from langchain_tavily import TavilySearch
 
+# Basic configuration with verified parameters
 search_tool = TavilySearch(
-    max_results=5,              # Number of results to return
+    max_results=5,              # Number of results to return (1-10)
     topic="general",            # Topic: "general" or "news"
-    # include_answer=False,     # Include AI-generated answer
-    # include_raw_content=False,# Include raw page content
-    # include_images=False,     # Include image results
-    # search_depth="basic",     # "basic" or "advanced"
-    # time_range="day",         # Time range: "day", "week", "month", "year"
-    # include_domains=None,     # List of domains to include
-    # exclude_domains=None      # List of domains to exclude
+)
+
+# For news-focused searches
+news_search = TavilySearch(
+    max_results=5,
+    topic="news"                # Returns results with published_date field
 )
 ```
+
+> **Note:** The `langchain-tavily` package wraps the Tavily API. Some parameters available in the raw Tavily API (like `search_depth`, `include_domains`, `exclude_domains`) may require using the underlying `TavilyClient` directly. Check the [langchain-tavily documentation](https://python.langchain.com/docs/integrations/tools/tavily_search/) for the most current parameter support.
 
 ### Testing the Search Tool Directly
 
@@ -351,21 +410,29 @@ print(results)
 
 ### TavilySearch Results Structure
 
+The `TavilySearch` tool returns a dictionary with the following structure:
+
 ```python
 {
     'query': 'Latest developments in AI',
+    'follow_up_questions': None,          # Suggested follow-up questions (if enabled)
+    'answer': None,                        # AI-generated answer (if enabled)
+    'images': [],                          # Image results (if enabled)
     'results': [
         {
-            'title': 'Article Title',
             'url': 'https://example.com/article',
+            'title': 'Article Title',
             'content': 'Article content snippet...',
-            'score': 0.95
+            'score': 0.95,                 # Relevance score (0-1)
+            'raw_content': None,           # Full page content (if enabled)
+            'published_date': '2025-01-15' # Only present for topic="news"
         },
         # ... more results
-    ],
-    'response_time': 1.2
+    ]
 }
 ```
+
+> **Note:** The exact fields returned may vary based on your TavilySearch configuration and the Tavily API version.
 
 ### Adding Custom Tools
 
@@ -416,7 +483,7 @@ LangGraph provides multiple streaming modes for real-time output.
 ### Stream State Values
 
 ```python
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langchain_anthropic import ChatAnthropic
 from langchain_tavily import TavilySearch
 
@@ -483,7 +550,7 @@ stream_with_progress(agent, "What are the latest breakthroughs in fusion energy?
 
 ```python
 import asyncio
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langchain_anthropic import ChatAnthropic
 from langchain_tavily import TavilySearch
 
@@ -514,7 +581,7 @@ LangGraph supports multiple persistence backends for conversation memory.
 
 ```python
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 
 checkpointer = MemorySaver()
 
@@ -537,7 +604,7 @@ agent.invoke({"messages": [{"role": "user", "content": "What's my name?"}]}, con
 
 ```python
 from langgraph.checkpoint.postgres import PostgresSaver
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 
 DB_URI = "postgresql://user:password@localhost:5432/langgraph"
 
@@ -594,7 +661,7 @@ agent = create_react_agent(
 
 ```python
 from langchain_core.messages import AnyMessage
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 
 def dynamic_prompt(state) -> list[AnyMessage]:
     """Generate dynamic system prompt based on state."""
@@ -621,7 +688,7 @@ agent = create_react_agent(
 ### Custom State with User Information
 
 ```python
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from langchain_core.messages import AnyMessage
 
@@ -683,9 +750,11 @@ with open("agent_graph.png", "wb") as f:
 ### ASCII Output (Terminal)
 
 ```python
-# Print ASCII representation
+# Print ASCII representation (requires grandalf package)
 print(agent.get_graph().draw_ascii())
 ```
+
+> **Note:** ASCII visualization requires the `grandalf` package. Install it with `uv add grandalf` or `pip install grandalf`.
 
 ---
 
@@ -695,7 +764,7 @@ print(agent.get_graph().draw_ascii())
 
 ```python
 import os
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langchain_anthropic import ChatAnthropic
 from langchain_tavily import TavilySearch
 
@@ -730,7 +799,7 @@ print(ask("Who is the current CEO of Tesla?"))
 
 ```python
 import os
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_anthropic import ChatAnthropic
 from langchain_tavily import TavilySearch
@@ -922,37 +991,41 @@ def safe_invoke(agent, question: str, config: dict = None) -> str:
 ### 2. Configure Search Tool Appropriately
 
 ```python
+from langchain_tavily import TavilySearch
+
 # For news queries
 news_search = TavilySearch(
     max_results=5,
-    topic="news",
-    time_range="week"
+    topic="news"
 )
 
-# For general research
+# For general research with more results
 research_search = TavilySearch(
     max_results=10,
-    search_depth="advanced",
-    include_raw_content=True
-)
-
-# For specific domains
-domain_search = TavilySearch(
-    max_results=5,
-    include_domains=["arxiv.org", "nature.com", "science.org"]
+    topic="general"
 )
 ```
+
+> **Note:** For advanced features like domain filtering or search depth, consider using the Tavily Python client directly or check the latest `langchain-tavily` documentation for supported parameters.
 
 ### 3. Use Appropriate Models
 
 ```python
-from langchain.chat_models import init_chat_model
+from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI, AzureChatOpenAI
 
-# For quick responses - faster, cheaper
-fast_model = init_chat_model("anthropic:claude-3-5-haiku-latest")
+# Anthropic models
+fast_model = ChatAnthropic(model="claude-3-5-haiku-latest")
+capable_model = ChatAnthropic(model="claude-sonnet-4-20250514")
 
-# For complex research - more capable
-capable_model = init_chat_model("anthropic:claude-sonnet-4-20250514")
+# OpenAI models
+openai_model = ChatOpenAI(model="gpt-4o")
+
+# Azure OpenAI models
+azure_model = AzureChatOpenAI(
+    azure_deployment="your-deployment-name",
+    api_version="2024-02-15-preview"
+)
 
 # Create agents for different use cases
 quick_agent = create_react_agent(fast_model, tools=[search_tool])
@@ -1019,7 +1092,7 @@ def invoke_with_logging(agent, question: str, config: dict = None):
 
 ```python
 import os
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_anthropic import ChatAnthropic
 from langchain_tavily import TavilySearch
