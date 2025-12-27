@@ -4,3 +4,6 @@ presentation
 .pytest_cache/
 *.pyc
 *.pckl
+node_modules/
+101 - GMail API files/
+claude-skills-sa-key.json
