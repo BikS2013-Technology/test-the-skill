@@ -14,3 +14,23 @@ and create a guide on the following
 - the benefits, and the limitations
 - a couple of indicative examples using it 
 I want you to create a begginers guide rather than a reference or an advanced guide.
+
+
+
+I want you to use the create-agent-skills skill to create a skill to enable claude code to access and process my Google Drive.
+I want you to use the "102 - Google-Workspace-APIs-Integration-Guide.md" document to get all the necessary instructions.
+The document's sample scripts have been implemented into the "102 - Google Workspace APIs Integration" folder.
+Into the ~/.google-skills/drive you can find the "DriveSkill-Credentials.json" file which is the credentials.json file to be used by the new skill.
+
+
+
+
+I want you to study the Google API documentation
+and create for me a detailed guide on how can I create
+python or npm scripts to get access to my Google Docs, Sheets, and Slides
+to create, list, update, delete such documents,
+get the summary, or search for specific info in such documents,
+how can I move and reorganize them, in drive folders,
+how can i examine how has access to them, how can i share them with others, and how can i revoke their access from them
+
+ I plan to use these guidelines to create a claude code skill to help me examine and manage my gdrive and the documents stored in it
