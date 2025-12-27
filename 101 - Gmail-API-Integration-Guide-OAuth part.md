@@ -1,18 +1,27 @@
-# Gmail API Integration Guide
+# Gmail API Integration Guide - Part 1: OAuth Setup
 
-This guide provides detailed instructions for accessing Gmail programmatically using Python and Node.js. It covers authentication setup, listing messages, reading messages/threads, creating replies, sending emails, and forwarding messages.
+This guide provides detailed instructions for setting up OAuth 2.0 authentication to access Gmail programmatically using Python. It covers creating a Google Cloud project, configuring the OAuth consent screen, creating credentials, and understanding scopes.
+
+> **Note:** This is Part 1 of the Gmail API Integration Guide, focusing on OAuth setup and the `credentials.json` file. API operations (listing messages, sending emails, etc.) are covered in Part 2.
 
 ---
 
 ## Table of Contents
 
 1. [Prerequisites and Setup](#1-prerequisites-and-setup)
-   - [1.2 Configure OAuth Consent Screen](#12-configure-oauth-consent-screen) *(includes scope configuration)*
+   - [1.1 Create a Google Cloud Project](#11-create-a-google-cloud-project)
+   - [1.2 Configure OAuth Consent Screen](#12-configure-oauth-consent-screen)
    - [1.3 Create OAuth 2.0 Credentials](#13-create-oauth-20-credentials)
    - [1.4 Authentication Methods: OAuth 2.0 vs Service Accounts](#14-authentication-methods-oauth-20-vs-service-accounts)
    - [1.5 Enable APIs Using gcloud CLI](#15-enable-apis-using-gcloud-cli)
    - [1.6 OAuth Consent Screen Configuration (CLI Limitations)](#16-oauth-consent-screen-configuration-cli-limitations)
-2. [OAuth 2.0 Scopes](#2-oauth-20-scopes) *(where and how to use them)*
+2. [OAuth 2.0 Scopes](#2-oauth-20-scopes)
+   - [2.1 Where to Configure Scopes](#21-where-to-configure-scopes-summary)
+   - [2.2 Available Gmail API Scopes](#22-available-gmail-api-scopes)
+   - [2.3 Scope Selection Guide](#23-scope-selection-guide)
+   - [2.4 Scope Combinations for Common Use Cases](#24-scope-combinations-for-common-use-cases)
+   - [2.5 Important Notes About Scopes](#25-important-notes-about-scopes)
+   - [2.6 CASA Security Assessment Requirements](#26-casa-security-assessment-requirements)
 
 ---
 
@@ -134,23 +143,32 @@ The OAuth consent screen is what users see when your application requests access
   - `https://www.googleapis.com/auth/gmail.readonly`
   - `https://www.googleapis.com/auth/gmail.send`
 
+> **Scope Selection:** For a complete list of available Gmail API scopes and guidance on choosing the right ones, see [Section 2: OAuth 2.0 Scopes](#2-oauth-20-scopes).
+
 #### 1.2.5 Scope Categories and Verification Requirements
 
 | Category | Examples | User Impact | Verification Required |
 |----------|----------|-------------|----------------------|
-| **Non-sensitive** | `userinfo.email`, `userinfo.profile` | Basic info | Basic verification only |
-| **Sensitive** | `gmail.readonly`, `gmail.send` | Can read/send emails | Additional verification |
-| **Restricted** | `mail.google.com/` (full access) | Complete control | Security assessment required |
+| **Non-sensitive** | `userinfo.email`, `gmail.labels` | Basic info, labels only | Basic verification only |
+| **Sensitive** | `gmail.send` | Send emails | Additional verification |
+| **Restricted** | `gmail.readonly`, `gmail.modify`, `mail.google.com/` | Read/write access | Security assessment required |
 
 **Gmail API Scope Classifications:**
 
 | Scope | Category | Notes |
 |-------|----------|-------|
-| `gmail.readonly` | Sensitive | Read-only access |
-| `gmail.send` | Sensitive | Send emails |
-| `gmail.compose` | Sensitive | Drafts and sending |
-| `gmail.modify` | Sensitive | Most operations |
+| `gmail.labels` | **Non-sensitive** | Labels management only |
+| `gmail.send` | Sensitive | Send emails only |
+| `gmail.readonly` | **Restricted** | Read-only access |
+| `gmail.compose` | **Restricted** | Drafts and sending |
+| `gmail.insert` | **Restricted** | Insert messages |
+| `gmail.modify` | **Restricted** | Most operations |
+| `gmail.metadata` | **Restricted** | Headers and labels only |
+| `gmail.settings.basic` | **Restricted** | Basic mail settings |
+| `gmail.settings.sharing` | **Restricted** | Sensitive mail settings |
 | `mail.google.com/` | **Restricted** | Full access - requires security assessment |
+
+> **Important:** Restricted scopes require annual CASA (Cloud Application Security Assessment) by a Google-approved assessor. See Section 2.6 for details.
 
 #### 1.2.6 What Happens If Scopes Don't Match?
 
@@ -196,7 +214,7 @@ OAuth 2.0 Client IDs are required to authenticate users and access their Gmail d
 | Personal Gmail account (@gmail.com) | ✅ **OAuth 2.0 Client ID** (this section) |
 | Desktop/CLI application | ✅ **OAuth 2.0 Client ID** (Desktop app type) |
 | Web application with user login | ✅ **OAuth 2.0 Client ID** (Web app type) |
-| Google Workspace server-to-server | Service Account (see Section 7) |
+| Google Workspace server-to-server | Service Account (covered in separate guide) |
 | API key only (no user data) | API Key (not applicable for Gmail) |
 
 **For Gmail API access, you will almost always need an OAuth 2.0 Client ID** because the Gmail API requires user authorization to access mailbox data.
@@ -245,7 +263,7 @@ OAuth 2.0 Client IDs are required to authenticate users and access their Gmail d
    - The file will be named something like `client_secret_XXXXX.apps.googleusercontent.com.json`
    - Rename it to `credentials.json` for consistency with the code examples
 
-> **Critical (2025 Update):** Starting June 2025, **client secrets are only visible at creation time**. You must download the JSON file immediately—you won't be able to see or download the full secret later. Store it securely!
+> **Best Practice:** Download the JSON file immediately after creation and store it securely. Client secrets should be treated as sensitive credentials—if lost, you may need to create a new OAuth client.
 
 #### 1.3.4 Understanding the credentials.json File
 
@@ -396,9 +414,9 @@ Service accounts are designed for server-to-server interactions where no user is
 | Google Workspace automation (server-to-server) | Service Account with domain-wide delegation |
 | Background processing for Workspace users | Service Account with domain-wide delegation |
 
-**For personal Gmail accounts**, you must use the OAuth 2.0 flow described in Sections 3 and 4 of this guide, which requires user consent through a browser-based authentication.
+**For personal Gmail accounts**, you must use the OAuth 2.0 flow described in Section 1.3 of this guide, which requires user consent through a browser-based authentication.
 
-**For Google Workspace accounts**, you have the option to use Service Accounts with domain-wide delegation. See Section 7 for implementation details.
+**For Google Workspace accounts**, you have the option to use Service Accounts with domain-wide delegation. Service Account implementation is covered in a separate guide.
 
 ### 1.5 Enable APIs Using gcloud CLI
 
@@ -575,7 +593,73 @@ Unlike enabling APIs (Section 1.5), configuring the OAuth consent screen for gen
 | Add Test Users | ❌ **Not Supported** | Must use Console |
 | IAP OAuth Brands (internal only) | ✅ Limited Support | For IAP use cases only |
 
-#### 1.6.2 What IS Available: IAP OAuth Brands (Limited Use Case)
+#### 1.6.2 Understanding Identity-Aware Proxy (IAP)
+
+Before discussing IAP OAuth Brands, it's important to understand what IAP is and its intended use cases—this clarifies why IAP-based OAuth is not suitable for Gmail API integration.
+
+**What is Identity-Aware Proxy (IAP)?**
+
+Identity-Aware Proxy (IAP) is a Google Cloud security service that provides application-level access control based on user identity rather than network location. It implements Google's **BeyondCorp** zero-trust security model, allowing organizations to secure applications without relying on traditional VPNs.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    TRADITIONAL VPN vs IAP ACCESS MODEL                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Traditional VPN:                    Identity-Aware Proxy:                  │
+│  ─────────────────                   ─────────────────────                  │
+│  User → VPN → Corporate Network →    User → Browser → IAP → Application    │
+│       → Application                        (identity verified at app level) │
+│                                                                             │
+│  • Network-based trust               • Identity-based trust                 │
+│  • VPN client required               • No client software needed            │
+│  • Access to entire network          • Access to specific applications      │
+│  • Complex to manage                 • Centralized policy management        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Recommended IAP Use Cases:**
+
+| Use Case | Description | Example |
+|----------|-------------|---------|
+| **Secure Internal Web Apps** | Protect internal applications without VPN | Corporate intranet, admin dashboards |
+| **Remote Workforce Access** | Enable secure remote access to corporate apps | Employees accessing internal tools from home |
+| **VM Administration** | Secure SSH/RDP access to VMs without public IPs | DevOps accessing production servers via IAP TCP forwarding |
+| **Zero-Trust Implementation** | Enforce BeyondCorp security model | Context-aware access based on user, device, and location |
+| **Microservices Protection** | Secure backend services in Kubernetes/Cloud Run | Protecting APIs between internal services |
+| **Multi-Tenant Applications** | Manage access across multiple organizations | SaaS platforms with enterprise customers |
+
+**IAP Key Features:**
+
+| Feature | Benefit |
+|---------|---------|
+| **Context-Aware Access** | Grant access based on user identity, device security status, IP address, and location |
+| **No Client Software** | Users access applications directly through their browser |
+| **Centralized Policies** | Define access policies once, apply across all protected applications |
+| **Audit Logging** | Detailed logs of all access attempts for compliance |
+| **Integration** | Works with Cloud IAM, Cloud Logging, and Security Command Center |
+
+**When to Use IAP:**
+
+✅ **Use IAP when you need to:**
+- Protect web applications hosted on Google Cloud (App Engine, Compute Engine, GKE, Cloud Run)
+- Secure access to on-premises applications via Cloud Load Balancing
+- Replace or reduce VPN dependency
+- Implement zero-trust access controls
+- Provide secure administrative access to VMs (SSH/RDP tunneling)
+
+❌ **Do NOT use IAP for:**
+- Gmail API integration (IAP OAuth clients cannot request Gmail scopes)
+- Accessing Google Workspace user data
+- Public-facing applications that need external user OAuth
+- Standard OAuth 2.0 flows for desktop/mobile applications
+
+> **Key Distinction:** IAP is for protecting **your applications** from unauthorized access. Gmail API OAuth is for **your application accessing user data** in Gmail. These are fundamentally different use cases requiring different OAuth configurations.
+
+For more information about IAP, see the [Identity-Aware Proxy documentation](https://cloud.google.com/iap/docs/concepts-overview).
+
+#### 1.6.3 What IS Available: IAP OAuth Brands (Limited Use Case)
 
 For **Identity-Aware Proxy (IAP)** use cases only, you can create OAuth brands and clients programmatically. However, these have significant limitations that make them **unsuitable for Gmail API integration**:
 
@@ -603,7 +687,7 @@ gcloud iap oauth-clients create projects/PROJECT_NUMBER/brands/BRAND_ID \
 | Unreviewed status | Requires manual console steps to publish |
 | 500 client limit | API-created clients count against this limit |
 
-#### 1.6.3 Required Manual Steps
+#### 1.6.4 Required Manual Steps
 
 For Gmail API integration, you **must** configure the OAuth consent screen manually:
 
@@ -634,7 +718,7 @@ For Gmail API integration, you **must** configure the OAuth consent screen manua
    - Click **Create Credentials > OAuth client ID**
    - Download the `credentials.json` file
 
-#### 1.6.4 Terraform Partial Support
+#### 1.6.5 Terraform Partial Support
 
 If you use Terraform for infrastructure management, there is **partial support** for IAP OAuth configuration:
 
@@ -659,7 +743,7 @@ resource "google_iap_client" "project_client" {
 - Cannot create standard OAuth 2.0 client credentials
 - [Feature request for scope configuration](https://github.com/hashicorp/terraform-provider-google/issues/17649) is open
 
-#### 1.6.5 Automation Workaround: Semi-Automated Setup Script
+#### 1.6.6 Automation Workaround: Semi-Automated Setup Script
 
 While you cannot fully automate OAuth consent screen configuration, you can automate the preparatory steps and provide clear instructions for the manual portions:
 
@@ -732,7 +816,7 @@ chmod +x setup-gmail-api-project.sh
 ./setup-gmail-api-project.sh my-project-id support@example.com
 ```
 
-#### 1.6.6 Future Improvements
+#### 1.6.7 Future Improvements
 
 This limitation is tracked in:
 - [Google Issue Tracker #35907249](https://issuetracker.google.com/issues/35907249) - Request for gcloud CLI support
@@ -778,14 +862,18 @@ Choose the **minimum scopes** required for your use case (principle of least pri
 
 | Scope | Description | Category |
 |-------|-------------|----------|
-| `https://www.googleapis.com/auth/gmail.readonly` | Read-only access to messages and settings | Sensitive |
+| `https://www.googleapis.com/auth/gmail.labels` | Manage labels only | **Non-sensitive** |
 | `https://www.googleapis.com/auth/gmail.send` | Send emails only | Sensitive |
-| `https://www.googleapis.com/auth/gmail.compose` | Create, read, update, and delete drafts; send emails | Sensitive |
-| `https://www.googleapis.com/auth/gmail.modify` | All read/write operations except permanent deletion | Sensitive |
-| `https://www.googleapis.com/auth/gmail.labels` | Manage labels only | Sensitive |
-| `https://www.googleapis.com/auth/gmail.settings.basic` | Manage basic mail settings | Sensitive |
-| `https://www.googleapis.com/auth/gmail.settings.sharing` | Manage sensitive mail settings (forwarding, aliases) | Restricted |
+| `https://www.googleapis.com/auth/gmail.readonly` | Read-only access to messages and settings | **Restricted** |
+| `https://www.googleapis.com/auth/gmail.compose` | Create, read, update, and delete drafts; send emails | **Restricted** |
+| `https://www.googleapis.com/auth/gmail.insert` | Insert and import messages only | **Restricted** |
+| `https://www.googleapis.com/auth/gmail.modify` | All read/write operations except permanent deletion | **Restricted** |
+| `https://www.googleapis.com/auth/gmail.metadata` | Read headers and labels (no message bodies) | **Restricted** |
+| `https://www.googleapis.com/auth/gmail.settings.basic` | Manage basic mail settings | **Restricted** |
+| `https://www.googleapis.com/auth/gmail.settings.sharing` | Manage sensitive mail settings (forwarding, aliases) | **Restricted** |
 | `https://mail.google.com/` | **Full access** to Gmail (use sparingly) | **Restricted** |
+
+> **Note:** Most Gmail scopes are classified as **Restricted**, which requires annual CASA security assessments for public apps. See Section 2.6 for verification requirements and costs.
 
 ### 2.3 Scope Selection Guide
 
@@ -831,7 +919,7 @@ SCOPES = ['https://mail.google.com/']
 
 ### 2.5 Important Notes About Scopes
 
-1. **Restricted scopes require security assessment**: Using `mail.google.com/` triggers a Google security review that can take weeks.
+1. **Most Gmail scopes are restricted**: Unlike other Google APIs, most Gmail scopes require security assessments. See Section 2.6 for details.
 
 2. **More scopes = more friction**: Users are more likely to deny access if your app requests too many permissions.
 
@@ -841,48 +929,103 @@ SCOPES = ['https://mail.google.com/']
 
 5. **Test user limitation**: During testing status, only added test users can authenticate (max 100 users).
 
----
+### 2.6 CASA Security Assessment Requirements
 
+Apps that use **restricted scopes** (which includes most Gmail scopes) and are intended for public use must complete Google's Cloud Application Security Assessment (CASA).
 
-## Quick Reference: API Endpoints
+#### 2.6.1 What is CASA?
 
-| Operation | Method | Endpoint |
-|-----------|--------|----------|
-| List messages | GET | `/gmail/v1/users/{userId}/messages` |
-| Get message | GET | `/gmail/v1/users/{userId}/messages/{id}` |
-| Send message | POST | `/gmail/v1/users/{userId}/messages/send` |
-| Delete message | DELETE | `/gmail/v1/users/{userId}/messages/{id}` |
-| Trash message | POST | `/gmail/v1/users/{userId}/messages/{id}/trash` |
-| List threads | GET | `/gmail/v1/users/{userId}/threads` |
-| Get thread | GET | `/gmail/v1/users/{userId}/threads/{id}` |
-| Create draft | POST | `/gmail/v1/users/{userId}/drafts` |
-| Send draft | POST | `/gmail/v1/users/{userId}/drafts/send` |
-| List labels | GET | `/gmail/v1/users/{userId}/labels` |
+CASA is Google's security audit framework for cloud applications that handle sensitive user data. It's built on the OWASP ASVS (Application Security Verification Standard) and uses risk-based, multi-tier testing.
+
+#### 2.6.2 When is CASA Required?
+
+| Scenario | CASA Required? |
+|----------|---------------|
+| Personal use only | No |
+| Development/testing/staging | No |
+| Internal use within organization | No |
+| Domain-wide installation (Workspace) | No |
+| Public app with restricted scopes | **Yes** |
+| Public app with only sensitive scopes | No (verification only) |
+| Public app with only non-sensitive scopes | No (basic verification) |
+
+#### 2.6.3 CASA Assessment Tiers and Costs
+
+| Tier | Description | Typical Cost |
+|------|-------------|--------------|
+| Tier 1 | Self-assessment questionnaire | Free |
+| Tier 2 | Light security audit | $500 - $1,000/year |
+| Tier 3 | Comprehensive security assessment | $4,500+/year |
+
+> **Note:** Costs are estimates and vary by assessor. CASA assessments must be renewed annually.
+
+#### 2.6.4 CASA Assessment Process
+
+1. **Submit for verification**: Complete OAuth app verification in Google Cloud Console
+2. **Receive tier assignment**: Google assigns a tier based on your app's scope and risk profile
+3. **Select an assessor**: Choose from Google's list of approved security assessors
+4. **Complete assessment**: Work with the assessor to complete the required testing
+5. **Submit results**: Assessor submits results to Google
+6. **Approval**: Google reviews and approves (or requests remediation)
+7. **Annual renewal**: Repeat assessment annually
+
+#### 2.6.5 Avoiding CASA Requirements
+
+If you want to avoid the CASA process, consider these alternatives:
+
+| Alternative | Trade-off |
+|-------------|-----------|
+| Use `gmail.send` only | Limited to sending; cannot read emails |
+| Use `gmail.labels` only | Can only manage labels |
+| Keep app internal | Only available to your organization |
+| Use for personal testing only | Limited to 100 test users |
+
+For more information, see [Restricted Scope Verification](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification) and [CASA Security Assessment](https://support.google.com/cloud/answer/13464325).
 
 ---
 
 ## Sources
 
+### Gmail API Documentation
 - [Gmail API Documentation](https://developers.google.com/workspace/gmail/api)
 - [Gmail API Reference](https://developers.google.com/workspace/gmail/api/reference/rest)
-- [Google API Python Client](https://github.com/googleapis/google-api-python-client)
-- [Google API Node.js Client](https://github.com/googleapis/google-api-nodejs-client)
-- [OAuth 2.0 for Desktop Apps](https://developers.google.com/identity/protocols/oauth2/native-app)
 - [Gmail API Authentication Overview](https://developers.google.com/workspace/gmail/api/auth/about-auth)
+- [Choose Gmail API Scopes](https://developers.google.com/workspace/gmail/api/auth/scopes)
+
+### OAuth 2.0 and Authentication
+- [Using OAuth 2.0 to Access Google APIs](https://developers.google.com/identity/protocols/oauth2)
+- [OAuth 2.0 for Desktop Apps](https://developers.google.com/identity/protocols/oauth2/native-app)
+- [Configure OAuth Consent Screen](https://developers.google.com/workspace/guides/configure-oauth-consent)
+- [OAuth Branding Management](https://support.google.com/cloud/answer/15549049)
+- [Create Access Credentials](https://developers.google.com/workspace/guides/create-credentials)
+- [Setting up OAuth 2.0](https://support.google.com/cloud/answer/6158849)
+
+### Verification and Security Assessment
+- [OAuth App Verification](https://support.google.com/cloud/answer/13463073)
+- [Sensitive Scope Verification](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification)
+- [Restricted Scope Verification](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification)
+- [CASA Security Assessment](https://support.google.com/cloud/answer/13464325)
+- [Unverified Apps](https://support.google.com/cloud/answer/7454865)
+
+### Service Accounts (for Google Workspace)
 - [Understanding Service Accounts](https://cloud.google.com/iam/docs/service-accounts)
 - [Domain-Wide Delegation](https://developers.google.com/workspace/guides/create-credentials#service-account)
+
+### Google Cloud CLI and APIs
+- [Google Cloud SDK Installation](https://cloud.google.com/sdk/docs/install)
 - [gcloud services enable Reference](https://cloud.google.com/sdk/gcloud/reference/services/enable)
 - [Enable and Disable Services](https://cloud.google.com/service-usage/docs/enable-disable)
 - [Enable Google Workspace APIs](https://developers.google.com/workspace/guides/enable-apis)
-- [Google Cloud SDK Installation](https://cloud.google.com/sdk/docs/install)
-- [Configure OAuth Consent Screen](https://developers.google.com/workspace/guides/configure-oauth-consent)
+
+### Identity-Aware Proxy (IAP)
+- [Identity-Aware Proxy Overview](https://cloud.google.com/iap/docs/concepts-overview)
+- [IAP Product Page](https://cloud.google.com/security/products/iap)
+- [IAP TCP Forwarding](https://cloud.google.com/iap/docs/using-tcp-forwarding)
 - [Programmatic OAuth Clients for IAP](https://cloud.google.com/iap/docs/programmatic-oauth-clients)
+
+### CLI Limitations and Automation
 - [Google Issue Tracker #35907249 - OAuth CLI Support](https://issuetracker.google.com/issues/35907249)
 - [Terraform google_iap_brand Resource](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/iap_brand)
-- [Create Access Credentials](https://developers.google.com/workspace/guides/create-credentials)
-- [Using OAuth 2.0 to Access Google APIs](https://developers.google.com/identity/protocols/oauth2)
-- [Setting up OAuth 2.0](https://support.google.com/cloud/answer/6158849)
-- [Choose Gmail API Scopes](https://developers.google.com/workspace/gmail/api/auth/scopes)
-- [Unverified Apps](https://support.google.com/cloud/answer/7454865)
-- [Sensitive Scope Verification](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification)
-- [Restricted Scope Verification](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification)
+
+### Client Libraries
+- [Google API Python Client](https://github.com/googleapis/google-api-python-client)
