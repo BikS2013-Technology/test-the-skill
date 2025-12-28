@@ -1,0 +1,34 @@
+# Frequently Asked Questions (FAQ)
+
+## General Questions
+
+### Q: What is included in the box?
+A: The box contains the main device, power adapter, quick start guide, and warranty card.
+
+### Q: How long is the warranty?
+A: The standard warranty is 2 years from the date of purchase.
+
+### Q: Can I use the device while charging?
+A: Yes, you can use the device while it's charging without any issues.
+
+## Technical Questions
+
+### Q: What are the minimum system requirements?
+A: The device requires a stable internet connection and works with any modern web browser.
+
+### Q: How do I update the firmware?
+A: Go to Settings > System > Software Update and tap "Check for Updates".
+
+### Q: Is my data encrypted?
+A: Yes, all data is encrypted using AES-256 encryption at rest and TLS 1.3 in transit.
+
+## Troubleshooting
+
+### Q: Why is my device slow?
+A: Try clearing the cache in Settings > Storage > Clear Cache, or restart the device.
+
+### Q: How do I reset my password?
+A: Click "Forgot Password" on the login screen and follow the email instructions.
+
+### Q: The device is overheating, what should I do?
+A: Turn off the device, unplug it, and let it cool for 30 minutes in a well-ventilated area.

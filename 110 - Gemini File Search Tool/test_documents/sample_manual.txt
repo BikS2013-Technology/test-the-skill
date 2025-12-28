@@ -1,0 +1,51 @@
+# Product Manual - Sample Document
+
+## Introduction
+This is a sample product manual used for testing the Gemini File Search Tool.
+
+## Getting Started
+To get started with your device:
+1. Unbox the device carefully
+2. Connect the power adapter
+3. Press the power button for 3 seconds
+4. Follow the on-screen setup wizard
+
+## Safety Guidelines
+- Do not expose the device to water or extreme temperatures
+- Use only the provided power adapter
+- Keep away from children under 3 years old
+- Do not attempt to open the device casing
+
+## Factory Reset
+To reset the device to factory settings:
+1. Go to Settings > System > Reset
+2. Select "Factory Reset"
+3. Enter your PIN code
+4. Confirm the reset action
+5. Wait for the device to restart
+
+After factory reset, all personal data will be erased and the device will return to its original state.
+
+## Troubleshooting
+### Device won't turn on
+- Check if the power adapter is connected properly
+- Try a different power outlet
+- Hold the power button for 10 seconds
+
+### Screen is frozen
+- Hold power + volume down for 15 seconds
+- If unresponsive, wait for battery to drain completely
+
+## Sensor Calibration
+To calibrate the sensors:
+1. Navigate to Settings > Sensors > Calibration
+2. Place the device on a flat surface
+3. Press "Start Calibration"
+4. Wait 30 seconds without moving the device
+5. Calibration complete notification will appear
+
+## Contact Support
+For technical support:
+- Email: support@example.com
+- Phone: 1-800-EXAMPLE
+- Website: https://support.example.com
