@@ -54,3 +54,39 @@ I want you to use the create-agent-skills skill to create a skill to enable clau
 I want you to use the "110 - Gemini-File-Search-Tool-Guide.md" document to get all the necessary instructions.
 The document's sample scripts have been implemented into the "110 - Gemini File Search Tool" folder.
 The API key needed for the Gemini File Search Tool is stored in the GEMINI_API_KEY environment variable.
+
+
+I want you to study the Google API documentation and create a detailed guide on how to create
+python and npm/typescript scripts to use the Nano Bananas API to build images, diagrams, schematic representations, infographics, and other types of visualizations. 
+I plan to use these guidelines to create skills to enable claude code to use the Nano Bananas API to build visual artefacts based on documents and content. 
+You can use the Context7 plugin to collect the necessary information to create the guide. In case you face any issues, please let me know.
+
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to list the available stores, thereby avoiding code duplication each time?
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to create a new store, thereby avoiding code duplication each time?
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to delete a store, thereby avoiding code duplication each time?
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to update a store, thereby avoiding code duplication each time?
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to upload documents to a store, thereby avoiding code duplication each time?
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to query a store, thereby avoiding code duplication each time?
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to update a document in a store, thereby avoiding code duplication each time?
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to delete a document from a store, thereby avoiding code duplication each time?
+
+Is it feasible to create a prebuilt TypeScript tool within the manage-gemini-file-search skill to support the user's request to replace a document in a     store, thereby avoiding code duplication each time?
+
+
+
+I want you to use the create-agent-skills skill to create a skill to enable claude code to use the Nano Banana API for the following tasks:
+- create images using the Nano Banana API
+- edit images using the Nano Banana API
+- generate diagrams, schemas, and other types of visualizations using the Nano Banana API
+I want you to use the "111 - Nano-Banana-API-Guide.md" document to get all the necessary instructions.
+The document's sample scripts have been implemented into the "111 - Nano Banana API" folder.
+The API key needed for the Nano Banana API is stored in the GEMINI_API_KEY environment variable.
+I want you to use only typescript to implement the skills. I want you to create prebuilt tools for each of the tasks mentioned above, to avoid code duplication each time I try to do something.
