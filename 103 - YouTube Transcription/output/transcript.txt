@@ -1,0 +1,508 @@
+[00:00] Sub agents are one of the most powerful
+[00:02] capabilities inside of Claw Code. And
+[00:05] while a lot of people, a lot of creators
+[00:07] talk about them or cover them, nobody is
+[00:09] showing you how to build sub agents for
+[00:12] writing operations or content creation
+[00:14] inside of Cloud Code. So that's what I'm
+[00:16] going to do today. I'm going to show you
+[00:18] exactly how you can build a writing
+[00:19] agent, how you can give it access to
+[00:22] Claude skills to use, and how you can
+[00:23] implement all of this in a larger
+[00:26] writing system inside of Claude Code.
+[00:28] Make sure to watch to the end of the
+[00:30] video if you want to use all the exact
+[00:31] resources I show you in this video. I'll
+[00:33] tell you exactly how you can get them
+[00:35] and put them into your own Claude code
+[00:37] system. Before we get started into it,
+[00:39] let's first just define what sub agents
+[00:42] are. And to do that, we'll just look at
+[00:43] Claude Codes documentation because they
+[00:46] can define it better than any of us can.
+[00:48] These are specialized AI sub aents in
+[00:51] Cloud Code for task specific workflows
+[00:54] and improved context management. custom
+[00:56] sub aents in cloud code or special AI
+[00:59] assistance that can be invoked to handle
+[01:01] specific types of tasks. Now also
+[01:03] important to note you don't even have to
+[01:05] manually invoke these. If you have
+[01:07] effective claude.md system prompts, if
+[01:10] you have effective sub aent system
+[01:12] prompts, then it will autonomously
+[01:14] invoke the agents uh you know when it
+[01:16] should. So that is another uh important
+[01:19] thing to keep in mind. You can basically
+[01:20] build out teams of these sub aents
+[01:22] inside of your cloud code writing system
+[01:24] and just run all these different writing
+[01:26] operations, you know, with spinning up
+[01:28] sub aents simultaneously, invoking them
+[01:30] autonomously. So, there are a couple key
+[01:33] benefits, you know, that we can run
+[01:34] through really quick of sub agents. The
+[01:36] first is context preservation. Each
+[01:39] operates in its own context. This means
+[01:41] it doesn't pollute the main
+[01:42] conversation. It stays inside of that
+[01:44] context. It also allows you to give
+[01:46] specialized expertise to these sub
+[01:48] agents so they can be fine-tuned with
+[01:50] detailed instructions. Now, people
+[01:53] create agents, you know, in various
+[01:55] different ways. You know, a lot of what
+[01:56] you're going to see out there is for
+[01:57] development and coding work. But what I
+[01:59] find best for writing operations in
+[02:01] content creation is specifically using
+[02:04] these sub agents as more or less like
+[02:08] orchestrator agents for specific tasks.
+[02:10] And then what you can do is load those
+[02:12] sub aents up with specific claude skills
+[02:15] that teach them how to carry out a
+[02:17] specific task like writing a newsletter
+[02:19] or a thought leadership article or maybe
+[02:21] social media posts and the list can go
+[02:23] on and on. So what you really want is
+[02:25] these sub agents to be like
+[02:27] orchestrators and then have a library of
+[02:30] skills that they can invoke under them
+[02:32] to carry out specific writing or content
+[02:34] tasks. Also reusability once created you
+[02:37] can use them across different projects.
+[02:39] You could copy and paste these agents.
+[02:41] You could sell them. You can use them in
+[02:43] client systems. All of that is possible.
+[02:45] And then we have flexible permissions.
+[02:47] Each one can have different access to
+[02:49] different tools, which we'll see when we
+[02:51] actually create it. Now, to create this
+[02:53] on the left side of my screen, you're
+[02:55] going to see I have Claude code running
+[02:56] in the terminal. I'm using cursor, but
+[02:58] you could be using any, you know, code
+[03:00] editor tool that that you want. You can
+[03:02] also even use Claude's own desktop app,
+[03:05] which now has Claude code in it. And you
+[03:07] can even use a VS Code extension so you
+[03:10] could see all of your different folders.
+[03:12] And then my writing system here, we have
+[03:14] a Claude file with an agents folder in a
+[03:17] skills folder. We have a context file or
+[03:19] context folder with my JSON context
+[03:22] profiles which explain to Claude, you
+[03:24] know, in JSON about my business about my
+[03:27] ideal client profiles and how to write
+[03:29] in my voice DNA. Then we have a
+[03:32] knowledge folder which I use to hold uh
+[03:34] you know all the different you know
+[03:36] drafts and knowledge of my writing
+[03:38] operations. And then we have our
+[03:39] claude.md
+[03:41] system prompt. Now you can have you know
+[03:44] whatever system that you're running
+[03:46] inside of claude code but you can also
+[03:48] get this exact starting kit folder. I'm
+[03:51] calling this like a claude code starter
+[03:53] kit and you can watch my master class
+[03:55] here that's also on YouTube and get
+[03:56] access to this starter kit that you can
+[03:58] just uh put right open up right in your
+[04:01] own cursor or claude code and use it.
+[04:03] But either way works. Today we're going
+[04:05] to be just putting an agent inside of
+[04:07] this system. Okay. So what we're going
+[04:09] to do I'm going to open up the terminal
+[04:11] here and to create an agent the first
+[04:13] thing we need to do is put slash agent.
+[04:16] And this is going to allow us to manage
+[04:17] our agent configurations. You can see I
+[04:20] already have one here that I created
+[04:22] which we are going to delete really
+[04:23] quick so that we could start fresh. But
+[04:25] you're going to see all right agents. No
+[04:27] agents found. Now we can create
+[04:29] specialized sub agents. Now there are a
+[04:32] couple built-in agents that you might
+[04:33] not even have realized using cloud code.
+[04:35] These are the ones that cloud code
+[04:36] itself uses the ones that are like
+[04:38] automatically inside here. There's like
+[04:41] a general purpose one, a planning one,
+[04:43] but today we're going to create specific
+[04:45] ones for writing. So you're just going
+[04:46] to hit enter here. And then the first
+[04:48] thing you need to do is choose your
+[04:49] location. You can either choose project
+[04:51] meaning it's inside this project here or
+[04:53] personal meaning it's on your system
+[04:55] file or locally across all your
+[04:57] projects. For writing operations, I like
+[05:00] highly recommend using project specific
+[05:02] agents because it's super easy just to
+[05:04] take that file, copy it and paste it
+[05:06] into any other projects and keep
+[05:08] everything nice and clean. Especially if
+[05:10] you're dealing, for example, maybe
+[05:11] you're a ghostriter dealing with
+[05:12] multiple clients or maybe you're running
+[05:14] content for different startups or
+[05:15] businesses or CEOs or whatever. I like
+[05:18] to keep everything very siloed and
+[05:20] protected from one another. So, I always
+[05:22] use project here. The next we're going
+[05:24] to have to do is choose our generation
+[05:26] method. We can either generate with
+[05:28] Claude or we can do a manual
+[05:30] configuration. If you hit enter on
+[05:32] generate with Claude, all you have to do
+[05:34] is explain what kind of agent you want
+[05:36] very simply. Be as detailed as possible,
+[05:38] and Claude will create it for you. But
+[05:40] for today, that's not what we're going
+[05:41] to do. We're going to do a manual
+[05:42] configuration because I highly recommend
+[05:45] you just get good at writing these
+[05:46] system prompts or finding other people
+[05:47] like myself who provide them to you
+[05:50] because these are highly specific for
+[05:52] writing operations. These are the ones
+[05:54] we use, I use in my daily uh, you know,
+[05:57] writing businesses and content
+[05:58] businesses. So, we're going to hit enter
+[06:00] on manual configuration. And the first
+[06:02] thing we need to do is enter a unique
+[06:04] identifier. Today, what we're going to
+[06:06] build is a newsletter uh writing agent.
+[06:09] So, we're going to say a newsletter
+[06:10] writer or we'll just say a newsletter
+[06:13] agent. Click enter. Now, we need to
+[06:15] write the system prompt. Now, there are
+[06:18] many many techniques to go into writing
+[06:19] system prompts. You can go learn those.
+[06:22] You can study those. You can try it out
+[06:23] yourself. I highly recommend always
+[06:25] doing it. I don't write system prompts
+[06:27] from scratch either. I work with Claude
+[06:29] to write system prompts. Oftentimes what
+[06:32] I'll do is also, you know, prior to this
+[06:34] whole, you know, new Claude code and
+[06:36] agents and all these different, you
+[06:38] know, ways to run your writing
+[06:40] operations. A lot of a lot of what we
+[06:42] were using were prompts, right? Very
+[06:43] detailed prompts beforehand. You can
+[06:46] take those prompts and they are amazing
+[06:48] starting points for building out into
+[06:50] full agent system prompts. So, if you
+[06:52] have prompts that you really like or
+[06:54] that you've been using, just give that
+[06:56] to Claude and ask it to help you turn
+[06:58] that into an agent system prompt. Uh,
+[07:00] and then go from there. Here, what we're
+[07:02] going to do is I already have one. We're
+[07:04] going to come here to my resources for
+[07:07] my Subscribers.
+[07:09] So, if you want this exact uh these
+[07:12] exact agent system prompts and various
+[07:14] other tools and skills, uh, check out my
+[07:16] Substack. That's where you can get it.
+[07:18] But we have the newsletter writer agent
+[07:20] here and I have written out the entire
+[07:22] system prompt. So we got the name like I
+[07:24] said and now here is the system prompt.
+[07:26] Claude code agents or sub aents all
+[07:28] they're using is an MD you know a
+[07:30] markdown file for the system prompt. So
+[07:33] you can literally just copy this here.
+[07:35] We have a newsletter writer agent. I'm
+[07:37] going to copy all of this and then we'll
+[07:39] go through it and I'll read you through
+[07:41] some of it so you can see kind of how
+[07:43] this works. Okay. So here on the left
+[07:46] now we have the system prompt.
+[07:48] Newsletter writer agent. You are a
+[07:50] newsletter writing specialist. Your job
+[07:52] is to coordinate the production of
+[07:55] complete ready to publish newsletters.
+[07:57] We then tell it that it's not writing
+[07:59] from scratch. What it needs to do is
+[08:01] load the user's context profiles from
+[08:04] our system here on the left. It needs to
+[08:06] gather necessary information from the
+[08:08] user, find and use the appropriate
+[08:10] writing skill. Like I told you, I build
+[08:12] my agents so they invoke Claude skills.
+[08:15] One of the most incredible things about
+[08:17] Claude Code now is we have all these
+[08:18] tools at our disposal. We have the sub
+[08:20] agents, you know, or the cloud. MD at
+[08:23] the top. We have sub agents underneath
+[08:25] that. We have library of cloud skills
+[08:27] underneath that. We have MCP servers.
+[08:29] There's so much we can do for writing
+[08:31] operations. Like nobody is doing this.
+[08:33] So, if you're watching this video right
+[08:34] now, if you're following me, if you're
+[08:36] even attempting to start building this
+[08:38] out, you are like in the 1% of the 1% of
+[08:41] people using AI for writing operations
+[08:44] because nobody else is really doing this
+[08:46] right now. And then it's going to
+[08:47] deliver a complete newsletter. We go
+[08:50] through the step-by-step process. We
+[08:52] tell it what to do and what not to do.
+[08:54] All right. After we have the system
+[08:56] prompts, we're just going to hit enter
+[08:57] here. And now we're going to give it a
+[08:59] description. This description is what
+[09:01] your your main claude is going to read
+[09:04] to know like when and when to use or
+[09:07] invoke this agent. I actually have this
+[09:09] written here too. So, let me just grab
+[09:11] that also and copy it. We're going to
+[09:14] tell it here in its description. We're
+[09:17] going to say writes complete newsletters
+[09:19] using context profiles and available
+[09:21] skills. Use when a user wants to write
+[09:24] Substack newsletters. You can change
+[09:26] this to just uh you know thought
+[09:27] leadership newsletters or just regular
+[09:29] newsletters. Like I said, I have
+[09:31] Substack. So I use this for myself for
+[09:33] my own Substack uh content. And then
+[09:35] we'll say mentions write a newsletter or
+[09:38] draft a newsletter or needs long form
+[09:40] educational content for their audience.
+[09:42] So this just helps Claude understand
+[09:43] when to use it. We're going to hit
+[09:45] enter. Now we can select the tools we
+[09:47] want to give it access to. We want to
+[09:49] give it access to all the tools here.
+[09:51] But you can even open this up and and
+[09:53] take away or give certain access to
+[09:54] certain tools. We're going to give it
+[09:56] access to all tools. And now we need to
+[09:58] select the model. If you do writing
+[10:00] operations at scale, if you're serious
+[10:02] about writing with AI in any level, if
+[10:04] you're actually using it for
+[10:05] professional work, highly recommend you
+[10:07] sign up for Claude's uh or Anthropics
+[10:10] Claude Max plan. Anywhere between a
+[10:12] hundred I think to $200 a month, right?
+[10:14] I use the $200 a month plan and I run
+[10:17] Opus like multiple hours a day all day
+[10:20] long. I never run into limits. So, if
+[10:23] that's what you have, I recommend using
+[10:24] Opus, uh, you know, as much as you can.
+[10:27] Then, we're just going to choose a color
+[10:29] here for the agent, whatever. Automatic
+[10:31] color. And this is our new agent. We can
+[10:33] now enter to save it. And there it is.
+[10:36] We now have the agent, newsletter agent.
+[10:38] And you're going to see that now in this
+[10:40] dotcloud file, we have agents and we
+[10:42] have our newsletter agent right here. So
+[10:46] it's as simple as that. That's how we
+[10:48] build the agent. But we're not done yet,
+[10:50] right? Because yeah, the agents there,
+[10:51] but it has no skills. This is like a
+[10:53] agent with no skills. So we need to give
+[10:55] it skills. And the skill we're going to
+[10:57] give it, which it should eventually
+[10:59] have, you know, many skills at its
+[11:01] disposal to, you know, invoke. But what
+[11:03] I want to give it is a thought
+[11:05] leadership newsletter skill. All right.
+[11:07] Also, I'm going to include this for
+[11:09] subsec members. If you want, you can
+[11:11] just download and use this exact claude
+[11:13] skill. You could or you can go look for
+[11:15] your own skills. You know, if you have
+[11:17] them already, there's libraries out
+[11:18] there. You could try to find them. But I
+[11:20] really like this thought leadership
+[11:21] newsletter skill. I use it for myself,
+[11:23] for clients. Uh you can use it for, you
+[11:26] know, writing thought leadership for
+[11:27] executives, CEOs, startups, for
+[11:29] yourself, for industry leaders. And what
+[11:32] this newsletter skill does is it writes
+[11:35] valuep packed thought leadership
+[11:36] newsletters between 800 to 1500 words
+[11:39] that educate, entertain, and position
+[11:42] the writer as the go-to authority in
+[11:44] their space. We're going to tell it when
+[11:46] to activate this. When a user wants to
+[11:49] write a newsletter weekly email, we're
+[11:51] going to give it a core philosophy. Now,
+[11:53] this is very detailed skill. My claude
+[11:55] skills are highly detailed, multiple
+[11:57] pages long. Uh so we have the four
+[12:00] pillars of a killer newsletter. We tell
+[12:02] it, you know, how to load our contact
+[12:05] profiles. Kind of everything you see
+[12:06] that I built here is very specific to
+[12:08] our system. So this is not something
+[12:10] other people are going to be copying and
+[12:11] using. We have a very uh very unique
+[12:14] approach here to building out writing
+[12:16] operations inside of Cloud Code. We're
+[12:18] going to tell it to load the context
+[12:19] profiles, craft subject lines, uh what
+[12:22] else? Write these hooks, greetings, all
+[12:25] right, CTAs, all of that. It goes on and
+[12:27] on and on, right? Not going to read
+[12:29] through all of it. But once you have
+[12:31] this skill, which you can literally
+[12:33] download if you want the zip file here,
+[12:35] and then we'll have the down here in the
+[12:37] downloads, that will give us this folder
+[12:39] here. And this is already in the correct
+[12:43] format for Claude skills, which is the
+[12:45] skill.md file in folder. And we just are
+[12:48] going to drag that into our skills,
+[12:51] which I already have there. So just
+[12:52] replace it. And now you could see we
+[12:55] have my agents folder with my newsletter
+[12:57] agent and my skills folder with a couple
+[13:00] skills that are already there and then
+[13:01] this new thought leadership skill. So
+[13:05] now we're officially done pretty much.
+[13:07] Now we have our our writing sub agent
+[13:10] inside of Claude Code for newsletters
+[13:12] and we have a thought leadership
+[13:14] newsletter skill that we're going to
+[13:16] give that agent access to. So the next
+[13:20] thing we do is just go to a regular
+[13:21] chat. And now this would be up to you,
+[13:23] you know, however it is you want to
+[13:25] write these. Say you are working for a
+[13:27] company or you are a ghostwriter for
+[13:29] CEOs or executives and you need to write
+[13:31] a thought leadership newsletter. You
+[13:33] just need to provide your notes or
+[13:35] transcripts or whatever serves as the
+[13:37] basis of your idea for the newsletter.
+[13:40] You're going to give it to Claude and
+[13:41] tell it to write a thought leadership
+[13:42] newsletter. Just to demonstrate this
+[13:44] quickly, I'll go to a YouTube video that
+[13:46] I released last week on adding 16
+[13:49] professional skills to your Cloud Code
+[13:51] setup. And I'm literally just going to
+[13:53] paste this transcript in here. And I'm
+[13:54] going to, you know, use voice dictation
+[13:56] to tell Claude, um, here is a transcript
+[13:59] on a YouTube video I did last week on
+[14:01] adding professional skills to your
+[14:03] Claude code setup. I want you to write a
+[14:05] thought leadership newsletter, uh, based
+[14:07] on this.
+[14:09] And then we're going to paste it. Paste
+[14:11] the transcript. Now when Claude starts
+[14:13] spinning up this process here, the first
+[14:15] thing it's going to do is read our
+[14:17] context profiles here, our JSON context
+[14:20] profiles. This is going to help it
+[14:21] understand our business or voice our
+[14:23] ideal client profiles. Uh so we want to
+[14:26] do that that is written into our claude
+[14:29] file or claude.md that is written into
+[14:31] our agents. Our skills all very heavily
+[14:34] rely on these context profiles. After
+[14:36] that, it's going to launch the
+[14:38] newsletter agent to write this thought
+[14:39] leadership newsletter based on my
+[14:42] YouTube video. So, that's going to take
+[14:43] a few seconds. I'll let that run
+[14:45] through. It's going to invoke the
+[14:47] thought leadership skill and uh and then
+[14:50] we'll see what the final output is. Now,
+[14:53] when you see this here, you could see
+[14:54] that this is the actual agent. Where did
+[14:57] it go? Here. This is the actual agent
+[14:59] that's spinning up and working here. And
+[15:01] we can even run this now in the
+[15:03] background. If you were to hit control
+[15:05] uh B, you could run this in the
+[15:07] background as you're doing other things
+[15:08] inside of Cloud Code, which is awesome.
+[15:10] You can run up multiple agents. You can
+[15:12] work on something else while it's
+[15:13] running. Uh but, you know, that's that's
+[15:16] for a future another video after you
+[15:18] start using uh agents. So, let's let
+[15:20] that run for a few seconds and then get
+[15:22] back to it. All right. So, it literally
+[15:24] took like less than a minute and it's
+[15:26] already done. We can see here that it
+[15:29] finished. The newsletter agent finished
+[15:31] and it gave us our thought leadership
+[15:33] newsletter based on the YouTube video.
+[15:35] It gives us our subject line options. We
+[15:38] have Claude Code has a secret upgrade
+[15:40] most people don't know about. I just
+[15:42] discovered hidden skills inside of Cloud
+[15:43] Code. The Claude feature that turns your
+[15:45] writing system into a content machine.
+[15:47] This is all based off of the skill I
+[15:48] gave it. We have the newsletter,
+[15:51] you know, this the thought leadership
+[15:53] newsletter completely written out in my
+[15:55] voice using my voice DNA targeted at my
+[15:57] ICP. uh you know at my ideal client
+[16:01] profile with my business context with
+[16:03] best practices for writing subject lines
+[16:06] and and and headings and titles with the
+[16:09] CTA that we told it. So we have this
+[16:12] very detailed thought leadership
+[16:13] newsletter. Uh and then we have a couple
+[16:15] notes here at the bottom. We sign off
+[16:18] here. Talk soon Alex. Then we have some
+[16:20] notes from Claude itself uh about what
+[16:23] it did here. So you can see like the
+[16:24] newsletter uses your voice DNA uh speaks
+[16:27] to your ICP's pain points and transform
+[16:29] transforms it into a scannable thought
+[16:31] leadership piece with clear CTAs. So
+[16:35] that is it. That is how you build out an
+[16:38] incredible writing operation inside of
+[16:40] Claude code. That is how you build a
+[16:41] newsletter writing sub agent with you
+[16:44] know Claude skills that it can use to
+[16:46] write different types of newsletters.
+[16:48] What I'm showing you here is incredibly
+[16:50] valuable. Uh this is just the beginning
+[16:53] of what you can do. Imagine all the
+[16:55] different sub aents you could build, all
+[16:57] the different cloud skills that you
+[16:59] could give them access to. And you start
+[17:01] to really see what the future of, you
+[17:03] know, writing operations inside of
+[17:05] Claude code or AI really looks like. You
+[17:08] see how much power one individual can
+[17:10] have with all these different sub aents
+[17:13] running underneath them, which is
+[17:14] exactly what I do. I don't have a single
+[17:16] employee. I don't have a single person
+[17:18] writing for me. I don't have nothing. I
+[17:20] run all of these writing operations and
+[17:22] agents myself in claude code across
+[17:25] different businesses. I have number two
+[17:27] newsletter rising on substack technology
+[17:30] that I use these sub agents to help me
+[17:32] with. I have client work. I ghostrite
+[17:35] for CEOs. I run content for startups all
+[17:38] by myself using these sub agents. So
+[17:40] definitely check this out. If you're not
+[17:42] doing it, you need to be doing it. And
+[17:44] if you haven't joined my substack yet,
+[17:46] definitely consider doing that because
+[17:48] here you'll get access to all these
+[17:50] resources that you see in my videos.
+[17:51] Quad code starting kits, quad code sub
+[17:54] agent skills. So check that out.

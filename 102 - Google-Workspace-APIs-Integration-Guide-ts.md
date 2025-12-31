@@ -1,6 +1,6 @@
-# Google Workspace APIs Integration Guide
+# Google Workspace APIs Integration Guide (TypeScript)
 
-This guide provides comprehensive instructions for programmatically accessing Google Drive, Docs, Sheets, and Slides using Python and Node.js. It covers file management, document operations, permissions management, and organization workflows.
+This guide provides comprehensive instructions for programmatically accessing Google Drive, Docs, Sheets, and Slides using TypeScript/Node.js. It covers file management, document operations, permissions management, and organization workflows.
 
 > **Prerequisites:** Before using this guide, complete the OAuth setup in [Part 1: OAuth Setup](./101%20-%20Gmail-API-Integration-Guide-OAuth%20part.md), which covers creating a Google Cloud project, configuring the OAuth consent screen, and creating credentials.
 
@@ -29,11 +29,10 @@ This guide provides comprehensive instructions for programmatically accessing Go
    - [Create Presentations](#51-create-presentations)
    - [Read Presentations](#52-read-presentations)
    - [Update Presentations](#53-update-presentations)
-6. [Python Implementation](#6-python-implementation)
-7. [Node.js Implementation](#7-nodejs-implementation)
-8. [Error Handling and Best Practices](#8-error-handling-and-best-practices)
-9. [Quick Reference](#9-quick-reference)
-10. [Sources](#sources)
+6. [TypeScript Implementation](#6-typescript-implementation)
+7. [Error Handling and Best Practices](#7-error-handling-and-best-practices)
+8. [Quick Reference](#8-quick-reference)
+9. [Sources](#sources)
 
 ---
 
@@ -99,180 +98,224 @@ The Google Drive API v3 provides comprehensive file management capabilities.
 
 #### List Files
 
-```python
-# Python - List files
-def list_files(service, page_size=100, query=None):
-    """
-    List files in Google Drive.
+```typescript
+// TypeScript - List files
+import { drive_v3 } from 'googleapis';
 
-    Args:
-        service: Drive API service instance
-        page_size: Maximum files per page (max 1000)
-        query: Optional search query string
+/**
+ * List files in Google Drive.
+ *
+ * @param service - Drive API service instance
+ * @param pageSize - Maximum files per page (max 1000)
+ * @param query - Optional search query string
+ * @param maxResults - Maximum total results to return (default 100, 0 for unlimited)
+ * @returns List of file metadata objects
+ */
+async function listFiles(
+  service: drive_v3.Drive,
+  pageSize: number = 100,
+  query?: string,
+  maxResults: number = 100
+): Promise<drive_v3.Schema$File[]> {
+  const files: drive_v3.Schema$File[] = [];
+  let pageToken: string | undefined;
+  // Optimize page size based on maxResults to avoid fetching more than needed
+  const effectivePageSize = maxResults > 0 ? Math.min(pageSize, maxResults) : pageSize;
 
-    Returns:
-        List of file metadata dictionaries
-    """
-    files = []
-    page_token = None
+  while (true) {
+    const params: drive_v3.Params$Resource$Files$List = {
+      pageSize: effectivePageSize,
+      fields: 'nextPageToken, files(id, name, mimeType, parents, createdTime, modifiedTime, owners, permissions)',
+      supportsAllDrives: true,
+    };
 
-    while True:
-        params = {
-            'pageSize': page_size,
-            'fields': 'nextPageToken, files(id, name, mimeType, parents, createdTime, modifiedTime, owners, permissions)',
-            'supportsAllDrives': True,
-        }
+    if (query) {
+      params.q = query;
+    }
+    if (pageToken) {
+      params.pageToken = pageToken;
+    }
 
-        if query:
-            params['q'] = query
-        if page_token:
-            params['pageToken'] = page_token
+    const response = await service.files.list(params);
+    files.push(...(response.data.files || []));
 
-        results = service.files().list(**params).execute()
-        files.extend(results.get('files', []))
+    // Check if we've reached maxResults limit
+    if (maxResults > 0 && files.length >= maxResults) {
+      return files.slice(0, maxResults);
+    }
 
-        page_token = results.get('nextPageToken')
-        if not page_token:
-            break
+    pageToken = response.data.nextPageToken ?? undefined;
+    if (!pageToken) {
+      break;
+    }
+  }
 
-    return files
+  return files;
+}
 ```
 
 #### Create File/Folder
 
-```python
-# Python - Create a folder
-def create_folder(service, name, parent_id=None):
-    """
-    Create a folder in Google Drive.
+```typescript
+// TypeScript - Create a folder
+import { drive_v3 } from 'googleapis';
 
-    Args:
-        service: Drive API service instance
-        name: Folder name
-        parent_id: Optional parent folder ID
+/**
+ * Create a folder in Google Drive.
+ *
+ * @param service - Drive API service instance
+ * @param name - Folder name
+ * @param parentId - Optional parent folder ID
+ * @returns Created folder metadata
+ */
+async function createFolder(
+  service: drive_v3.Drive,
+  name: string,
+  parentId?: string
+): Promise<drive_v3.Schema$File> {
+  const fileMetadata: drive_v3.Schema$File = {
+    name,
+    mimeType: 'application/vnd.google-apps.folder',
+  };
 
-    Returns:
-        Created folder metadata
-    """
-    file_metadata = {
-        'name': name,
-        'mimeType': 'application/vnd.google-apps.folder'
-    }
+  if (parentId) {
+    fileMetadata.parents = [parentId];
+  }
 
-    if parent_id:
-        file_metadata['parents'] = [parent_id]
+  const response = await service.files.create({
+    requestBody: fileMetadata,
+    fields: 'id, name, webViewLink',
+  });
 
-    folder = service.files().create(
-        body=file_metadata,
-        fields='id, name, webViewLink'
-    ).execute()
-
-    return folder
+  return response.data;
+}
 
 
-# Python - Upload a file
-def upload_file(service, file_path, name=None, parent_id=None, mime_type=None):
-    """
-    Upload a file to Google Drive.
+// TypeScript - Upload a file
+import * as fs from 'fs';
+import * as path from 'path';
 
-    Args:
-        service: Drive API service instance
-        file_path: Local path to the file
-        name: Optional name (defaults to filename)
-        parent_id: Optional parent folder ID
-        mime_type: Optional MIME type
+/**
+ * Upload a file to Google Drive.
+ *
+ * @param service - Drive API service instance
+ * @param filePath - Local path to the file
+ * @param name - Optional name (defaults to filename)
+ * @param parentId - Optional parent folder ID
+ * @param mimeType - Optional MIME type
+ * @returns Uploaded file metadata
+ */
+async function uploadFile(
+  service: drive_v3.Drive,
+  filePath: string,
+  name?: string,
+  parentId?: string,
+  mimeType?: string
+): Promise<drive_v3.Schema$File> {
+  const fileName = name ?? path.basename(filePath);
 
-    Returns:
-        Uploaded file metadata
-    """
-    from googleapiclient.http import MediaFileUpload
-    import os
+  const fileMetadata: drive_v3.Schema$File = { name: fileName };
 
-    if name is None:
-        name = os.path.basename(file_path)
+  if (parentId) {
+    fileMetadata.parents = [parentId];
+  }
 
-    file_metadata = {'name': name}
+  const media = {
+    mimeType: mimeType,
+    body: fs.createReadStream(filePath),
+  };
 
-    if parent_id:
-        file_metadata['parents'] = [parent_id]
+  const response = await service.files.create({
+    requestBody: fileMetadata,
+    media,
+    fields: 'id, name, webViewLink',
+  });
 
-    media = MediaFileUpload(
-        file_path,
-        mimetype=mime_type,
-        resumable=True
-    )
-
-    file = service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields='id, name, webViewLink'
-    ).execute()
-
-    return file
+  return response.data;
+}
 ```
 
 #### Update File Metadata
 
-```python
-# Python - Update file metadata
-def update_file_metadata(service, file_id, new_name=None, description=None):
-    """
-    Update a file's metadata.
+```typescript
+// TypeScript - Update file metadata
+import { drive_v3 } from 'googleapis';
 
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file to update
-        new_name: Optional new name
-        description: Optional description
+/**
+ * Update a file's metadata.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file to update
+ * @param newName - Optional new name
+ * @param description - Optional description
+ * @returns Updated file metadata
+ */
+async function updateFileMetadata(
+  service: drive_v3.Drive,
+  fileId: string,
+  newName?: string,
+  description?: string
+): Promise<drive_v3.Schema$File> {
+  const fileMetadata: drive_v3.Schema$File = {};
 
-    Returns:
-        Updated file metadata
-    """
-    file_metadata = {}
+  if (newName) {
+    fileMetadata.name = newName;
+  }
+  if (description) {
+    fileMetadata.description = description;
+  }
 
-    if new_name:
-        file_metadata['name'] = new_name
-    if description:
-        file_metadata['description'] = description
+  const response = await service.files.update({
+    fileId,
+    requestBody: fileMetadata,
+    fields: 'id, name, description',
+  });
 
-    updated_file = service.files().update(
-        fileId=file_id,
-        body=file_metadata,
-        fields='id, name, description'
-    ).execute()
-
-    return updated_file
+  return response.data;
+}
 ```
 
 #### Delete File
 
-```python
-# Python - Delete a file (move to trash or permanently delete)
-def delete_file(service, file_id, permanent=False):
-    """
-    Delete a file from Google Drive.
+```typescript
+// TypeScript - Delete a file (move to trash or permanently delete)
+import { drive_v3 } from 'googleapis';
 
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file to delete
-        permanent: If True, permanently delete; otherwise move to trash
-    """
-    if permanent:
-        service.files().delete(fileId=file_id).execute()
-    else:
-        # Move to trash
-        service.files().update(
-            fileId=file_id,
-            body={'trashed': True}
-        ).execute()
+/**
+ * Delete a file from Google Drive.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file to delete
+ * @param permanent - If true, permanently delete; otherwise move to trash
+ */
+async function deleteFile(
+  service: drive_v3.Drive,
+  fileId: string,
+  permanent: boolean = false
+): Promise<void> {
+  if (permanent) {
+    await service.files.delete({ fileId });
+  } else {
+    // Move to trash
+    await service.files.update({
+      fileId,
+      requestBody: { trashed: true },
+    });
+  }
+}
 
-
-def restore_from_trash(service, file_id):
-    """Restore a file from trash."""
-    service.files().update(
-        fileId=file_id,
-        body={'trashed': False}
-    ).execute()
+/**
+ * Restore a file from trash.
+ */
+async function restoreFromTrash(
+  service: drive_v3.Drive,
+  fileId: string
+): Promise<void> {
+  await service.files.update({
+    fileId,
+    requestBody: { trashed: false },
+  });
+}
 ```
 
 ### 2.2 Search and Query
@@ -311,316 +354,418 @@ The Drive API supports powerful search queries using the `q` parameter.
 
 #### Search Examples
 
-```python
-# Python - Search functions
-def search_files(service, query, page_size=100):
-    """
-    Search for files using a query string.
+```typescript
+// TypeScript - Search functions
+import { drive_v3 } from 'googleapis';
 
-    Args:
-        service: Drive API service instance
-        query: Search query string
-        page_size: Maximum results per page
-
-    Returns:
-        List of matching files
-    """
-    return list_files(service, page_size=page_size, query=query)
-
-
-def find_docs_by_name(service, name_contains):
-    """Find Google Docs containing a specific name."""
-    query = f"name contains '{name_contains}' and mimeType = 'application/vnd.google-apps.document' and trashed = false"
-    return search_files(service, query)
+/**
+ * Search for files using a query string.
+ *
+ * @param service - Drive API service instance
+ * @param query - Search query string
+ * @param pageSize - Maximum results per page
+ * @returns List of matching files
+ */
+async function searchFiles(
+  service: drive_v3.Drive,
+  query: string,
+  pageSize: number = 100
+): Promise<drive_v3.Schema$File[]> {
+  return listFiles(service, pageSize, query);
+}
 
 
-def find_sheets_by_name(service, name_contains):
-    """Find Google Sheets containing a specific name."""
-    query = f"name contains '{name_contains}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false"
-    return search_files(service, query)
+/**
+ * Find Google Docs containing a specific name.
+ */
+async function findDocsByName(
+  service: drive_v3.Drive,
+  nameContains: string
+): Promise<drive_v3.Schema$File[]> {
+  const query = `name contains '${nameContains}' and mimeType = 'application/vnd.google-apps.document' and trashed = false`;
+  return searchFiles(service, query);
+}
 
 
-def find_slides_by_name(service, name_contains):
-    """Find Google Slides containing a specific name."""
-    query = f"name contains '{name_contains}' and mimeType = 'application/vnd.google-apps.presentation' and trashed = false"
-    return search_files(service, query)
+/**
+ * Find Google Sheets containing a specific name.
+ */
+async function findSheetsByName(
+  service: drive_v3.Drive,
+  nameContains: string
+): Promise<drive_v3.Schema$File[]> {
+  const query = `name contains '${nameContains}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`;
+  return searchFiles(service, query);
+}
 
 
-def find_files_in_folder(service, folder_id):
-    """Find all files in a specific folder."""
-    query = f"'{folder_id}' in parents and trashed = false"
-    return search_files(service, query)
+/**
+ * Find Google Slides containing a specific name.
+ */
+async function findSlidesByName(
+  service: drive_v3.Drive,
+  nameContains: string
+): Promise<drive_v3.Schema$File[]> {
+  const query = `name contains '${nameContains}' and mimeType = 'application/vnd.google-apps.presentation' and trashed = false`;
+  return searchFiles(service, query);
+}
 
 
-def find_files_by_owner(service, owner_email):
-    """Find files owned by a specific user."""
-    query = f"'{owner_email}' in owners and trashed = false"
-    return search_files(service, query)
+/**
+ * Find all files in a specific folder.
+ */
+async function findFilesInFolder(
+  service: drive_v3.Drive,
+  folderId: string
+): Promise<drive_v3.Schema$File[]> {
+  const query = `'${folderId}' in parents and trashed = false`;
+  return searchFiles(service, query);
+}
 
 
-def find_shared_with_me(service):
-    """Find files shared with the current user."""
-    query = "sharedWithMe = true and trashed = false"
-    return search_files(service, query)
+/**
+ * Find files owned by a specific user.
+ */
+async function findFilesByOwner(
+  service: drive_v3.Drive,
+  ownerEmail: string
+): Promise<drive_v3.Schema$File[]> {
+  const query = `'${ownerEmail}' in owners and trashed = false`;
+  return searchFiles(service, query);
+}
 
 
-def find_recent_files(service, days=7):
-    """Find files modified in the last N days."""
-    from datetime import datetime, timedelta
-
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat() + 'Z'
-    query = f"modifiedTime > '{cutoff}' and trashed = false"
-    return search_files(service, query)
-
-
-def full_text_search(service, search_text):
-    """Search file contents for specific text."""
-    query = f"fullText contains '{search_text}' and trashed = false"
-    return search_files(service, query)
+/**
+ * Find files shared with the current user.
+ */
+async function findSharedWithMe(
+  service: drive_v3.Drive
+): Promise<drive_v3.Schema$File[]> {
+  const query = "sharedWithMe = true and trashed = false";
+  return searchFiles(service, query);
+}
 
 
-def find_all_folders(service):
-    """Find all folders."""
-    query = "mimeType = 'application/vnd.google-apps.folder' and trashed = false"
-    return search_files(service, query)
+/**
+ * Find files modified in the last N days.
+ */
+async function findRecentFiles(
+  service: drive_v3.Drive,
+  days: number = 7
+): Promise<drive_v3.Schema$File[]> {
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const query = `modifiedTime > '${cutoff}' and trashed = false`;
+  return searchFiles(service, query);
+}
+
+
+/**
+ * Search file contents for specific text.
+ */
+async function fullTextSearch(
+  service: drive_v3.Drive,
+  searchText: string
+): Promise<drive_v3.Schema$File[]> {
+  const query = `fullText contains '${searchText}' and trashed = false`;
+  return searchFiles(service, query);
+}
+
+
+/**
+ * Find all folders.
+ */
+async function findAllFolders(
+  service: drive_v3.Drive
+): Promise<drive_v3.Schema$File[]> {
+  const query = "mimeType = 'application/vnd.google-apps.folder' and trashed = false";
+  return searchFiles(service, query);
+}
 ```
 
 ### 2.3 Folder Management
 
-```python
-# Python - Folder management functions
-def get_folder_contents(service, folder_id, include_subfolders=False):
-    """
-    Get all contents of a folder.
+```typescript
+// TypeScript - Folder management functions
+import { drive_v3 } from 'googleapis';
 
-    Args:
-        service: Drive API service instance
-        folder_id: ID of the folder
-        include_subfolders: If True, recursively get subfolder contents
+/**
+ * Get all contents of a folder.
+ *
+ * @param service - Drive API service instance
+ * @param folderId - ID of the folder
+ * @param includeSubfolders - If true, recursively get subfolder contents
+ * @returns List of files and folders
+ */
+async function getFolderContents(
+  service: drive_v3.Drive,
+  folderId: string,
+  includeSubfolders: boolean = false
+): Promise<drive_v3.Schema$File[]> {
+  const query = `'${folderId}' in parents and trashed = false`;
+  const contents = await searchFiles(service, query);
 
-    Returns:
-        List of files and folders
-    """
-    query = f"'{folder_id}' in parents and trashed = false"
-    contents = search_files(service, query)
+  if (includeSubfolders) {
+    const folders = contents.filter(
+      f => f.mimeType === 'application/vnd.google-apps.folder'
+    );
+    for (const folder of folders) {
+      if (folder.id) {
+        const subfolderContents = await getFolderContents(service, folder.id, true);
+        contents.push(...subfolderContents);
+      }
+    }
+  }
 
-    if include_subfolders:
-        folders = [f for f in contents if f['mimeType'] == 'application/vnd.google-apps.folder']
-        for folder in folders:
-            subfolder_contents = get_folder_contents(service, folder['id'], True)
-            contents.extend(subfolder_contents)
-
-    return contents
+  return contents;
+}
 
 
-def get_folder_tree(service, folder_id, depth=0, max_depth=10):
-    """
-    Get a hierarchical view of folder structure.
+interface FolderTreeNode {
+  id: string;
+  name: string;
+  type: 'folder' | 'file';
+  mimeType?: string;
+  children?: FolderTreeNode[];
+}
 
-    Args:
-        service: Drive API service instance
-        folder_id: ID of the root folder
-        depth: Current depth (for recursion)
-        max_depth: Maximum recursion depth
+/**
+ * Get a hierarchical view of folder structure.
+ *
+ * @param service - Drive API service instance
+ * @param folderId - ID of the root folder
+ * @param depth - Current depth (for recursion)
+ * @param maxDepth - Maximum recursion depth
+ * @returns Dictionary with folder tree structure
+ */
+async function getFolderTree(
+  service: drive_v3.Drive,
+  folderId: string,
+  depth: number = 0,
+  maxDepth: number = 10
+): Promise<FolderTreeNode | null> {
+  if (depth > maxDepth) {
+    return null;
+  }
 
-    Returns:
-        Dictionary with folder tree structure
-    """
-    if depth > max_depth:
-        return None
+  const folderInfo = await service.files.get({
+    fileId: folderId,
+    fields: 'id, name',
+  });
 
-    folder_info = service.files().get(
-        fileId=folder_id,
-        fields='id, name'
-    ).execute()
+  const query = `'${folderId}' in parents and trashed = false`;
+  const contents = await searchFiles(service, query);
 
-    query = f"'{folder_id}' in parents and trashed = false"
-    contents = search_files(service, query)
+  const tree: FolderTreeNode = {
+    id: folderInfo.data.id!,
+    name: folderInfo.data.name!,
+    type: 'folder',
+    children: [],
+  };
 
-    tree = {
-        'id': folder_info['id'],
-        'name': folder_info['name'],
-        'type': 'folder',
-        'children': []
+  for (const item of contents) {
+    if (item.mimeType === 'application/vnd.google-apps.folder' && item.id) {
+      const subtree = await getFolderTree(service, item.id, depth + 1, maxDepth);
+      if (subtree) {
+        tree.children!.push(subtree);
+      }
+    } else {
+      tree.children!.push({
+        id: item.id!,
+        name: item.name!,
+        type: 'file',
+        mimeType: item.mimeType ?? undefined,
+      });
+    }
+  }
+
+  return tree;
+}
+
+
+/**
+ * Create a folder path, creating intermediate folders as needed.
+ *
+ * @param service - Drive API service instance
+ * @param folderPath - Folder path like 'Projects/2024/Q1'
+ * @param rootId - Optional root folder ID
+ * @returns ID of the final folder in the path
+ */
+async function createFolderPath(
+  service: drive_v3.Drive,
+  folderPath: string,
+  rootId?: string
+): Promise<string> {
+  const folders = folderPath.replace(/^\/|\/$/g, '').split('/');
+  let parentId = rootId;
+
+  for (const folderName of folders) {
+    // Check if folder exists
+    let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    if (parentId) {
+      query += ` and '${parentId}' in parents`;
     }
 
-    for item in contents:
-        if item['mimeType'] == 'application/vnd.google-apps.folder':
-            subtree = get_folder_tree(service, item['id'], depth + 1, max_depth)
-            if subtree:
-                tree['children'].append(subtree)
-        else:
-            tree['children'].append({
-                'id': item['id'],
-                'name': item['name'],
-                'type': 'file',
-                'mimeType': item['mimeType']
-            })
+    const results = await searchFiles(service, query, 1);
 
-    return tree
+    if (results.length > 0) {
+      parentId = results[0].id!;
+    } else {
+      // Create the folder
+      const newFolder = await createFolder(service, folderName, parentId);
+      parentId = newFolder.id!;
+    }
+  }
 
-
-def create_folder_path(service, path, root_id=None):
-    """
-    Create a folder path, creating intermediate folders as needed.
-
-    Args:
-        service: Drive API service instance
-        path: Folder path like 'Projects/2024/Q1'
-        root_id: Optional root folder ID
-
-    Returns:
-        ID of the final folder in the path
-    """
-    folders = path.strip('/').split('/')
-    parent_id = root_id
-
-    for folder_name in folders:
-        # Check if folder exists
-        query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
-        if parent_id:
-            query += f" and '{parent_id}' in parents"
-
-        results = search_files(service, query, page_size=1)
-
-        if results:
-            parent_id = results[0]['id']
-        else:
-            # Create the folder
-            new_folder = create_folder(service, folder_name, parent_id)
-            parent_id = new_folder['id']
-
-    return parent_id
+  return parentId!;
+}
 ```
 
 ### 2.4 Move and Organize Files
 
-```python
-# Python - Move and organize functions
-def move_file(service, file_id, new_parent_id, remove_from_current=True):
-    """
-    Move a file to a different folder.
+```typescript
+// TypeScript - Move and organize functions
+import { drive_v3 } from 'googleapis';
 
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file to move
-        new_parent_id: ID of the destination folder
-        remove_from_current: If True, remove from current parent(s)
+/**
+ * Move a file to a different folder.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file to move
+ * @param newParentId - ID of the destination folder
+ * @param removeFromCurrent - If true, remove from current parent(s)
+ * @returns Updated file metadata
+ */
+async function moveFile(
+  service: drive_v3.Drive,
+  fileId: string,
+  newParentId: string,
+  removeFromCurrent: boolean = true
+): Promise<drive_v3.Schema$File> {
+  // Get current parents
+  const file = await service.files.get({
+    fileId,
+    fields: 'parents',
+  });
 
-    Returns:
-        Updated file metadata
-    """
-    # Get current parents
-    file = service.files().get(
-        fileId=file_id,
-        fields='parents'
-    ).execute()
+  const previousParents = (file.data.parents || []).join(',');
 
-    previous_parents = ','.join(file.get('parents', []))
+  // Move the file
+  const response = await service.files.update({
+    fileId,
+    addParents: newParentId,
+    removeParents: removeFromCurrent ? previousParents : undefined,
+    fields: 'id, name, parents',
+  });
 
-    # Move the file
-    updated_file = service.files().update(
-        fileId=file_id,
-        addParents=new_parent_id,
-        removeParents=previous_parents if remove_from_current else None,
-        fields='id, name, parents'
-    ).execute()
-
-    return updated_file
-
-
-def copy_file(service, file_id, new_name=None, destination_folder_id=None):
-    """
-    Copy a file.
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file to copy
-        new_name: Optional new name for the copy
-        destination_folder_id: Optional destination folder
-
-    Returns:
-        Copied file metadata
-    """
-    copy_metadata = {}
-
-    if new_name:
-        copy_metadata['name'] = new_name
-    if destination_folder_id:
-        copy_metadata['parents'] = [destination_folder_id]
-
-    copied_file = service.files().copy(
-        fileId=file_id,
-        body=copy_metadata,
-        fields='id, name, webViewLink'
-    ).execute()
-
-    return copied_file
+  return response.data;
+}
 
 
-def add_to_folder(service, file_id, folder_id):
-    """
-    Add a file to an additional folder (create shortcut).
+/**
+ * Copy a file.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file to copy
+ * @param newName - Optional new name for the copy
+ * @param destinationFolderId - Optional destination folder
+ * @returns Copied file metadata
+ */
+async function copyFile(
+  service: drive_v3.Drive,
+  fileId: string,
+  newName?: string,
+  destinationFolderId?: string
+): Promise<drive_v3.Schema$File> {
+  const copyMetadata: drive_v3.Schema$File = {};
 
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        folder_id: ID of the folder to add to
+  if (newName) {
+    copyMetadata.name = newName;
+  }
+  if (destinationFolderId) {
+    copyMetadata.parents = [destinationFolderId];
+  }
 
-    Returns:
-        Updated file metadata
-    """
-    updated_file = service.files().update(
-        fileId=file_id,
-        addParents=folder_id,
-        fields='id, name, parents'
-    ).execute()
+  const response = await service.files.copy({
+    fileId,
+    requestBody: copyMetadata,
+    fields: 'id, name, webViewLink',
+  });
 
-    return updated_file
+  return response.data;
+}
 
 
-def organize_files_by_type(service, source_folder_id):
-    """
-    Organize files in a folder by type into subfolders.
+/**
+ * Add a file to an additional folder (create shortcut).
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param folderId - ID of the folder to add to
+ * @returns Updated file metadata
+ */
+async function addToFolder(
+  service: drive_v3.Drive,
+  fileId: string,
+  folderId: string
+): Promise<drive_v3.Schema$File> {
+  const response = await service.files.update({
+    fileId,
+    addParents: folderId,
+    fields: 'id, name, parents',
+  });
 
-    Args:
-        service: Drive API service instance
-        source_folder_id: ID of the source folder
+  return response.data;
+}
 
-    Returns:
-        Dictionary mapping types to created folder IDs
-    """
-    type_folders = {
-        'application/vnd.google-apps.document': 'Documents',
-        'application/vnd.google-apps.spreadsheet': 'Spreadsheets',
-        'application/vnd.google-apps.presentation': 'Presentations',
-        'application/pdf': 'PDFs',
-        'image/': 'Images',
+
+/**
+ * Organize files in a folder by type into subfolders.
+ *
+ * @param service - Drive API service instance
+ * @param sourceFolderId - ID of the source folder
+ * @returns Dictionary mapping types to created folder IDs
+ */
+async function organizeFilesByType(
+  service: drive_v3.Drive,
+  sourceFolderId: string
+): Promise<Record<string, string>> {
+  const typeFolders: Record<string, string> = {
+    'application/vnd.google-apps.document': 'Documents',
+    'application/vnd.google-apps.spreadsheet': 'Spreadsheets',
+    'application/vnd.google-apps.presentation': 'Presentations',
+    'application/pdf': 'PDFs',
+    'image/': 'Images',
+  };
+
+  const createdFolders: Record<string, string> = {};
+  const contents = await findFilesInFolder(service, sourceFolderId);
+
+  for (const file of contents) {
+    if (file.mimeType === 'application/vnd.google-apps.folder') {
+      continue;
     }
 
-    created_folders = {}
-    contents = find_files_in_folder(service, source_folder_id)
+    // Determine target folder
+    let targetFolderName = 'Other';
+    for (const [mimePrefix, folderName] of Object.entries(typeFolders)) {
+      if (file.mimeType?.startsWith(mimePrefix)) {
+        targetFolderName = folderName;
+        break;
+      }
+    }
 
-    for file in contents:
-        if file['mimeType'] == 'application/vnd.google-apps.folder':
-            continue
+    // Create or get target folder
+    if (!(targetFolderName in createdFolders)) {
+      const folder = await createFolder(service, targetFolderName, sourceFolderId);
+      createdFolders[targetFolderName] = folder.id!;
+    }
 
-        # Determine target folder
-        target_folder_name = 'Other'
-        for mime_prefix, folder_name in type_folders.items():
-            if file['mimeType'].startswith(mime_prefix):
-                target_folder_name = folder_name
-                break
+    // Move file to target folder
+    await moveFile(service, file.id!, createdFolders[targetFolderName]);
+  }
 
-        # Create or get target folder
-        if target_folder_name not in created_folders:
-            folder = create_folder(service, target_folder_name, source_folder_id)
-            created_folders[target_folder_name] = folder['id']
-
-        # Move file to target folder
-        move_file(service, file['id'], created_folders[target_folder_name])
-
-    return created_folders
+  return createdFolders;
+}
 ```
 
 ### 2.5 Permissions Management
@@ -645,288 +790,343 @@ def organize_files_by_type(service, source_folder_id):
 | `domain` | Entire domain (requires domain) |
 | `anyone` | Anyone with the link |
 
-```python
-# Python - Permissions management functions
-def list_permissions(service, file_id):
-    """
-    List all permissions for a file.
+```typescript
+// TypeScript - Permissions management functions
+import { drive_v3 } from 'googleapis';
 
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
+/**
+ * List all permissions for a file.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @returns List of permission objects
+ */
+async function listPermissions(
+  service: drive_v3.Drive,
+  fileId: string
+): Promise<drive_v3.Schema$Permission[]> {
+  const response = await service.permissions.list({
+    fileId,
+    fields: 'permissions(id, type, role, emailAddress, domain, displayName, expirationTime, deleted)',
+  });
 
-    Returns:
-        List of permission objects
-    """
-    permissions = service.permissions().list(
-        fileId=file_id,
-        fields='permissions(id, type, role, emailAddress, domain, displayName, expirationTime, deleted)'
-    ).execute()
-
-    return permissions.get('permissions', [])
-
-
-def get_permission_details(service, file_id, permission_id):
-    """
-    Get detailed information about a specific permission.
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        permission_id: ID of the permission
-
-    Returns:
-        Permission details
-    """
-    permission = service.permissions().get(
-        fileId=file_id,
-        permissionId=permission_id,
-        fields='*'
-    ).execute()
-
-    return permission
+  return response.data.permissions || [];
+}
 
 
-def share_with_user(service, file_id, email, role='reader', send_notification=True, message=None):
-    """
-    Share a file with a specific user.
+/**
+ * Get detailed information about a specific permission.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param permissionId - ID of the permission
+ * @returns Permission details
+ */
+async function getPermissionDetails(
+  service: drive_v3.Drive,
+  fileId: string,
+  permissionId: string
+): Promise<drive_v3.Schema$Permission> {
+  const response = await service.permissions.get({
+    fileId,
+    permissionId,
+    fields: '*',
+  });
 
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file to share
-        email: Email address of the user
-        role: Permission role ('reader', 'commenter', 'writer')
-        send_notification: Send email notification
-        message: Optional message in notification
+  return response.data;
+}
 
-    Returns:
-        Created permission
-    """
-    permission = {
-        'type': 'user',
-        'role': role,
-        'emailAddress': email
+
+/**
+ * Share a file with a specific user.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file to share
+ * @param email - Email address of the user
+ * @param role - Permission role ('reader', 'commenter', 'writer')
+ * @param sendNotification - Send email notification
+ * @param message - Optional message in notification
+ * @returns Created permission
+ */
+async function shareWithUser(
+  service: drive_v3.Drive,
+  fileId: string,
+  email: string,
+  role: 'reader' | 'commenter' | 'writer' = 'reader',
+  sendNotification: boolean = true,
+  message?: string
+): Promise<drive_v3.Schema$Permission> {
+  const permission: drive_v3.Schema$Permission = {
+    type: 'user',
+    role,
+    emailAddress: email,
+  };
+
+  const response = await service.permissions.create({
+    fileId,
+    requestBody: permission,
+    sendNotificationEmail: sendNotification,
+    emailMessage: message,
+    fields: 'id, type, role, emailAddress',
+  });
+
+  return response.data;
+}
+
+
+/**
+ * Share a file with a Google Group.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param groupEmail - Email address of the Google Group
+ * @param role - Permission role
+ * @returns Created permission
+ */
+async function shareWithGroup(
+  service: drive_v3.Drive,
+  fileId: string,
+  groupEmail: string,
+  role: 'reader' | 'commenter' | 'writer' = 'reader'
+): Promise<drive_v3.Schema$Permission> {
+  const permission: drive_v3.Schema$Permission = {
+    type: 'group',
+    role,
+    emailAddress: groupEmail,
+  };
+
+  const response = await service.permissions.create({
+    fileId,
+    requestBody: permission,
+    fields: 'id, type, role, emailAddress',
+  });
+
+  return response.data;
+}
+
+
+/**
+ * Share a file with an entire domain.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param domain - Domain name (e.g., 'example.com')
+ * @param role - Permission role
+ * @returns Created permission
+ */
+async function shareWithDomain(
+  service: drive_v3.Drive,
+  fileId: string,
+  domain: string,
+  role: 'reader' | 'commenter' | 'writer' = 'reader'
+): Promise<drive_v3.Schema$Permission> {
+  const permission: drive_v3.Schema$Permission = {
+    type: 'domain',
+    role,
+    domain,
+  };
+
+  const response = await service.permissions.create({
+    fileId,
+    requestBody: permission,
+    fields: 'id, type, role, domain',
+  });
+
+  return response.data;
+}
+
+
+/**
+ * Share a file with anyone who has the link.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param role - Permission role ('reader' or 'commenter')
+ * @returns Created permission
+ */
+async function shareWithAnyone(
+  service: drive_v3.Drive,
+  fileId: string,
+  role: 'reader' | 'commenter' = 'reader'
+): Promise<drive_v3.Schema$Permission> {
+  const permission: drive_v3.Schema$Permission = {
+    type: 'anyone',
+    role,
+  };
+
+  const response = await service.permissions.create({
+    fileId,
+    requestBody: permission,
+    fields: 'id, type, role',
+  });
+
+  return response.data;
+}
+
+
+/**
+ * Update an existing permission's role.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param permissionId - ID of the permission to update
+ * @param newRole - New role ('reader', 'commenter', 'writer')
+ * @returns Updated permission
+ */
+async function updatePermission(
+  service: drive_v3.Drive,
+  fileId: string,
+  permissionId: string,
+  newRole: 'reader' | 'commenter' | 'writer'
+): Promise<drive_v3.Schema$Permission> {
+  const response = await service.permissions.update({
+    fileId,
+    permissionId,
+    requestBody: { role: newRole },
+    fields: 'id, type, role, emailAddress',
+  });
+
+  return response.data;
+}
+
+
+/**
+ * Revoke a permission (remove access).
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param permissionId - ID of the permission to revoke
+ */
+async function revokePermission(
+  service: drive_v3.Drive,
+  fileId: string,
+  permissionId: string
+): Promise<void> {
+  await service.permissions.delete({
+    fileId,
+    permissionId,
+  });
+}
+
+
+/**
+ * Revoke access for a specific user by email.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param email - Email address of the user
+ * @returns True if access was revoked, false if user had no access
+ */
+async function revokeAccessByEmail(
+  service: drive_v3.Drive,
+  fileId: string,
+  email: string
+): Promise<boolean> {
+  const permissions = await listPermissions(service, fileId);
+
+  for (const perm of permissions) {
+    if (perm.emailAddress?.toLowerCase() === email.toLowerCase()) {
+      await revokePermission(service, fileId, perm.id!);
+      return true;
     }
+  }
 
-    created_permission = service.permissions().create(
-        fileId=file_id,
-        body=permission,
-        sendNotificationEmail=send_notification,
-        emailMessage=message,
-        fields='id, type, role, emailAddress'
-    ).execute()
-
-    return created_permission
+  return false;
+}
 
 
-def share_with_group(service, file_id, group_email, role='reader'):
-    """
-    Share a file with a Google Group.
+/**
+ * Transfer ownership of a file to another user.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @param newOwnerEmail - Email of the new owner
+ * @returns Updated permission
+ *
+ * Note:
+ *   - The new owner must be in the same domain for Google Workspace
+ *   - For personal accounts, ownership transfer may be restricted
+ */
+async function transferOwnership(
+  service: drive_v3.Drive,
+  fileId: string,
+  newOwnerEmail: string
+): Promise<drive_v3.Schema$Permission> {
+  const permission: drive_v3.Schema$Permission = {
+    type: 'user',
+    role: 'owner',
+    emailAddress: newOwnerEmail,
+  };
 
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        group_email: Email address of the Google Group
-        role: Permission role
+  const response = await service.permissions.create({
+    fileId,
+    requestBody: permission,
+    transferOwnership: true,
+    fields: 'id, type, role, emailAddress',
+  });
 
-    Returns:
-        Created permission
-    """
-    permission = {
-        'type': 'group',
-        'role': role,
-        'emailAddress': group_email
+  return response.data;
+}
+
+
+interface SharingSummary {
+  owner: string | null;
+  writers: string[];
+  commenters: string[];
+  readers: string[];
+  anyoneWithLink: boolean;
+  domainShared: string[];
+}
+
+/**
+ * Get a summary of who has access to a file.
+ *
+ * @param service - Drive API service instance
+ * @param fileId - ID of the file
+ * @returns Dictionary with sharing summary
+ */
+async function getSharingSummary(
+  service: drive_v3.Drive,
+  fileId: string
+): Promise<SharingSummary> {
+  const permissions = await listPermissions(service, fileId);
+
+  const summary: SharingSummary = {
+    owner: null,
+    writers: [],
+    commenters: [],
+    readers: [],
+    anyoneWithLink: false,
+    domainShared: [],
+  };
+
+  for (const perm of permissions) {
+    const role = perm.role;
+    const permType = perm.type;
+
+    if (role === 'owner') {
+      summary.owner = perm.emailAddress || null;
+    } else if (role === 'writer') {
+      if (permType === 'user') {
+        summary.writers.push(perm.emailAddress || '');
+      } else if (permType === 'group') {
+        summary.writers.push(`group:${perm.emailAddress}`);
+      }
+    } else if (role === 'commenter') {
+      summary.commenters.push(perm.emailAddress || '');
+    } else if (role === 'reader') {
+      if (permType === 'anyone') {
+        summary.anyoneWithLink = true;
+      } else if (permType === 'domain') {
+        summary.domainShared.push(perm.domain || '');
+      } else if (permType === 'user') {
+        summary.readers.push(perm.emailAddress || '');
+      }
     }
+  }
 
-    return service.permissions().create(
-        fileId=file_id,
-        body=permission,
-        fields='id, type, role, emailAddress'
-    ).execute()
-
-
-def share_with_domain(service, file_id, domain, role='reader'):
-    """
-    Share a file with an entire domain.
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        domain: Domain name (e.g., 'example.com')
-        role: Permission role
-
-    Returns:
-        Created permission
-    """
-    permission = {
-        'type': 'domain',
-        'role': role,
-        'domain': domain
-    }
-
-    return service.permissions().create(
-        fileId=file_id,
-        body=permission,
-        fields='id, type, role, domain'
-    ).execute()
-
-
-def share_with_anyone(service, file_id, role='reader'):
-    """
-    Share a file with anyone who has the link.
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        role: Permission role ('reader' or 'commenter')
-
-    Returns:
-        Created permission
-    """
-    permission = {
-        'type': 'anyone',
-        'role': role
-    }
-
-    return service.permissions().create(
-        fileId=file_id,
-        body=permission,
-        fields='id, type, role'
-    ).execute()
-
-
-def update_permission(service, file_id, permission_id, new_role):
-    """
-    Update an existing permission's role.
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        permission_id: ID of the permission to update
-        new_role: New role ('reader', 'commenter', 'writer')
-
-    Returns:
-        Updated permission
-    """
-    return service.permissions().update(
-        fileId=file_id,
-        permissionId=permission_id,
-        body={'role': new_role},
-        fields='id, type, role, emailAddress'
-    ).execute()
-
-
-def revoke_permission(service, file_id, permission_id):
-    """
-    Revoke a permission (remove access).
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        permission_id: ID of the permission to revoke
-    """
-    service.permissions().delete(
-        fileId=file_id,
-        permissionId=permission_id
-    ).execute()
-
-
-def revoke_access_by_email(service, file_id, email):
-    """
-    Revoke access for a specific user by email.
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        email: Email address of the user
-
-    Returns:
-        True if access was revoked, False if user had no access
-    """
-    permissions = list_permissions(service, file_id)
-
-    for perm in permissions:
-        if perm.get('emailAddress', '').lower() == email.lower():
-            revoke_permission(service, file_id, perm['id'])
-            return True
-
-    return False
-
-
-def transfer_ownership(service, file_id, new_owner_email):
-    """
-    Transfer ownership of a file to another user.
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-        new_owner_email: Email of the new owner
-
-    Returns:
-        Updated permission
-
-    Note:
-        - The new owner must be in the same domain for Google Workspace
-        - For personal accounts, ownership transfer may be restricted
-    """
-    permission = {
-        'type': 'user',
-        'role': 'owner',
-        'emailAddress': new_owner_email
-    }
-
-    return service.permissions().create(
-        fileId=file_id,
-        body=permission,
-        transferOwnership=True,
-        fields='id, type, role, emailAddress'
-    ).execute()
-
-
-def get_sharing_summary(service, file_id):
-    """
-    Get a summary of who has access to a file.
-
-    Args:
-        service: Drive API service instance
-        file_id: ID of the file
-
-    Returns:
-        Dictionary with sharing summary
-    """
-    permissions = list_permissions(service, file_id)
-
-    summary = {
-        'owner': None,
-        'writers': [],
-        'commenters': [],
-        'readers': [],
-        'anyone_with_link': False,
-        'domain_shared': []
-    }
-
-    for perm in permissions:
-        role = perm.get('role')
-        perm_type = perm.get('type')
-
-        if role == 'owner':
-            summary['owner'] = perm.get('emailAddress')
-        elif role == 'writer':
-            if perm_type == 'user':
-                summary['writers'].append(perm.get('emailAddress'))
-            elif perm_type == 'group':
-                summary['writers'].append(f"group:{perm.get('emailAddress')}")
-        elif role == 'commenter':
-            summary['commenters'].append(perm.get('emailAddress'))
-        elif role == 'reader':
-            if perm_type == 'anyone':
-                summary['anyone_with_link'] = True
-            elif perm_type == 'domain':
-                summary['domain_shared'].append(perm.get('domain'))
-            elif perm_type == 'user':
-                summary['readers'].append(perm.get('emailAddress'))
-
-    return summary
+  return summary;
+}
 ```
 
 ---
@@ -937,463 +1137,568 @@ The Google Docs API allows you to create and manipulate documents programmatical
 
 ### 3.1 Create Documents
 
-```python
-# Python - Create documents
-def create_document(docs_service, title):
-    """
-    Create a new Google Document.
+```typescript
+// TypeScript - Create documents
+import { docs_v1 } from 'googleapis';
 
-    Args:
-        docs_service: Docs API service instance
-        title: Document title
+/**
+ * Create a new Google Document.
+ *
+ * @param docsService - Docs API service instance
+ * @param title - Document title
+ * @returns Created document metadata
+ */
+async function createDocument(
+  docsService: docs_v1.Docs,
+  title: string
+): Promise<docs_v1.Schema$Document> {
+  const response = await docsService.documents.create({
+    requestBody: { title },
+  });
 
-    Returns:
-        Created document metadata
-    """
-    document = docs_service.documents().create(
-        body={'title': title}
-    ).execute()
-
-    return document
-
-
-def create_document_with_content(docs_service, title, content):
-    """
-    Create a new Google Document with initial content.
-
-    Args:
-        docs_service: Docs API service instance
-        title: Document title
-        content: Initial text content
-
-    Returns:
-        Created document metadata
-    """
-    # Create the document
-    document = create_document(docs_service, title)
-    document_id = document['documentId']
-
-    # Insert content
-    requests = [
-        {
-            'insertText': {
-                'location': {'index': 1},
-                'text': content
-            }
-        }
-    ]
-
-    docs_service.documents().batchUpdate(
-        documentId=document_id,
-        body={'requests': requests}
-    ).execute()
-
-    return document
+  return response.data;
+}
 
 
-def create_document_in_folder(drive_service, docs_service, title, folder_id):
-    """
-    Create a document in a specific folder.
+/**
+ * Create a new Google Document with initial content.
+ *
+ * @param docsService - Docs API service instance
+ * @param title - Document title
+ * @param content - Initial text content
+ * @returns Created document metadata
+ */
+async function createDocumentWithContent(
+  docsService: docs_v1.Docs,
+  title: string,
+  content: string
+): Promise<docs_v1.Schema$Document> {
+  // Create the document
+  const document = await createDocument(docsService, title);
+  const documentId = document.documentId!;
 
-    Args:
-        drive_service: Drive API service instance
-        docs_service: Docs API service instance
-        title: Document title
-        folder_id: Parent folder ID
+  // Insert content
+  const requests: docs_v1.Schema$Request[] = [
+    {
+      insertText: {
+        location: { index: 1 },
+        text: content,
+      },
+    },
+  ];
 
-    Returns:
-        Created document metadata
-    """
-    # Create the document
-    document = create_document(docs_service, title)
-    document_id = document['documentId']
+  await docsService.documents.batchUpdate({
+    documentId,
+    requestBody: { requests },
+  });
 
-    # Move to folder
-    move_file(drive_service, document_id, folder_id)
+  return document;
+}
 
-    return document
+
+/**
+ * Create a document in a specific folder.
+ *
+ * @param driveService - Drive API service instance
+ * @param docsService - Docs API service instance
+ * @param title - Document title
+ * @param folderId - Parent folder ID
+ * @returns Created document metadata
+ */
+async function createDocumentInFolder(
+  driveService: drive_v3.Drive,
+  docsService: docs_v1.Docs,
+  title: string,
+  folderId: string
+): Promise<docs_v1.Schema$Document> {
+  // Create the document
+  const document = await createDocument(docsService, title);
+  const documentId = document.documentId!;
+
+  // Move to folder
+  await moveFile(driveService, documentId, folderId);
+
+  return document;
+}
 ```
 
 ### 3.2 Read Document Content
 
-```python
-# Python - Read document content
-def get_document(docs_service, document_id):
-    """
-    Get a document's full content.
+```typescript
+// TypeScript - Read document content
+import { docs_v1 } from 'googleapis';
 
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
+/**
+ * Get a document's full content.
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @returns Document object with content
+ */
+async function getDocument(
+  docsService: docs_v1.Docs,
+  documentId: string
+): Promise<docs_v1.Schema$Document> {
+  const response = await docsService.documents.get({
+    documentId,
+  });
 
-    Returns:
-        Document object with content
-    """
-    document = docs_service.documents().get(
-        documentId=document_id
-    ).execute()
-
-    return document
-
-
-def get_document_text(docs_service, document_id):
-    """
-    Extract plain text from a document.
-
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
-
-    Returns:
-        Plain text content of the document
-    """
-    document = get_document(docs_service, document_id)
-
-    text_content = []
-
-    def extract_text(elements):
-        for element in elements:
-            if 'paragraph' in element:
-                for para_element in element['paragraph'].get('elements', []):
-                    if 'textRun' in para_element:
-                        text_content.append(para_element['textRun'].get('content', ''))
-            elif 'table' in element:
-                for row in element['table'].get('tableRows', []):
-                    for cell in row.get('tableCells', []):
-                        extract_text(cell.get('content', []))
-
-    body = document.get('body', {})
-    extract_text(body.get('content', []))
-
-    return ''.join(text_content)
+  return response.data;
+}
 
 
-def get_document_summary(docs_service, document_id, max_chars=500):
-    """
-    Get a summary of document content (first N characters).
+/**
+ * Extract plain text from a document.
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @returns Plain text content of the document
+ */
+async function getDocumentText(
+  docsService: docs_v1.Docs,
+  documentId: string
+): Promise<string> {
+  const document = await getDocument(docsService, documentId);
+  const textContent: string[] = [];
 
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
-        max_chars: Maximum characters to return
-
-    Returns:
-        Dictionary with title and summary
-    """
-    document = get_document(docs_service, document_id)
-    text = get_document_text(docs_service, document_id)
-
-    summary = text[:max_chars].strip()
-    if len(text) > max_chars:
-        summary += '...'
-
-    return {
-        'title': document.get('title'),
-        'documentId': document_id,
-        'summary': summary,
-        'totalLength': len(text)
+  function extractText(elements: docs_v1.Schema$StructuralElement[]): void {
+    for (const element of elements) {
+      if (element.paragraph) {
+        for (const paraElement of element.paragraph.elements || []) {
+          if (paraElement.textRun) {
+            textContent.push(paraElement.textRun.content || '');
+          }
+        }
+      } else if (element.table) {
+        for (const row of element.table.tableRows || []) {
+          for (const cell of row.tableCells || []) {
+            extractText(cell.content || []);
+          }
+        }
+      }
     }
+  }
+
+  const body = document.body;
+  if (body?.content) {
+    extractText(body.content);
+  }
+
+  return textContent.join('');
+}
 
 
-def get_document_structure(docs_service, document_id):
-    """
-    Get the structural elements of a document (headings, lists, tables).
+interface DocumentSummary {
+  title: string | null | undefined;
+  documentId: string;
+  summary: string;
+  totalLength: number;
+}
 
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
+/**
+ * Get a summary of document content (first N characters).
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @param maxChars - Maximum characters to return
+ * @returns Dictionary with title and summary
+ */
+async function getDocumentSummary(
+  docsService: docs_v1.Docs,
+  documentId: string,
+  maxChars: number = 500
+): Promise<DocumentSummary> {
+  const document = await getDocument(docsService, documentId);
+  const text = await getDocumentText(docsService, documentId);
 
-    Returns:
-        Dictionary with document structure
-    """
-    document = get_document(docs_service, document_id)
+  let summary = text.slice(0, maxChars).trim();
+  if (text.length > maxChars) {
+    summary += '...';
+  }
 
-    structure = {
-        'title': document.get('title'),
-        'headings': [],
-        'lists': 0,
-        'tables': 0,
-        'images': 0
+  return {
+    title: document.title,
+    documentId,
+    summary,
+    totalLength: text.length,
+  };
+}
+
+
+interface HeadingInfo {
+  level: string;
+  text: string;
+}
+
+interface DocumentStructure {
+  title: string | null | undefined;
+  headings: HeadingInfo[];
+  lists: number;
+  tables: number;
+  images: number;
+}
+
+/**
+ * Get the structural elements of a document (headings, lists, tables).
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @returns Dictionary with document structure
+ */
+async function getDocumentStructure(
+  docsService: docs_v1.Docs,
+  documentId: string
+): Promise<DocumentStructure> {
+  const document = await getDocument(docsService, documentId);
+
+  const structure: DocumentStructure = {
+    title: document.title,
+    headings: [],
+    lists: 0,
+    tables: 0,
+    images: 0,
+  };
+
+  const body = document.body;
+
+  for (const element of body?.content || []) {
+    if (element.paragraph) {
+      const paragraph = element.paragraph;
+      const style = paragraph.paragraphStyle?.namedStyleType || '';
+
+      if (style.startsWith('HEADING')) {
+        let text = '';
+        for (const paraElement of paragraph.elements || []) {
+          if (paraElement.textRun) {
+            text += paraElement.textRun.content || '';
+          }
+        }
+
+        structure.headings.push({
+          level: style,
+          text: text.trim(),
+        });
+      }
+
+      // Check for inline objects (images)
+      for (const paraElement of paragraph.elements || []) {
+        if (paraElement.inlineObjectElement) {
+          structure.images += 1;
+        }
+      }
+    } else if (element.table) {
+      structure.tables += 1;
     }
+  }
 
-    body = document.get('body', {})
-
-    for element in body.get('content', []):
-        if 'paragraph' in element:
-            paragraph = element['paragraph']
-            style = paragraph.get('paragraphStyle', {}).get('namedStyleType', '')
-
-            if style.startswith('HEADING'):
-                text = ''
-                for para_element in paragraph.get('elements', []):
-                    if 'textRun' in para_element:
-                        text += para_element['textRun'].get('content', '')
-
-                structure['headings'].append({
-                    'level': style,
-                    'text': text.strip()
-                })
-
-            # Check for inline objects (images)
-            for para_element in paragraph.get('elements', []):
-                if 'inlineObjectElement' in para_element:
-                    structure['images'] += 1
-
-        elif 'table' in element:
-            structure['tables'] += 1
-
-    return structure
+  return structure;
+}
 ```
 
 ### 3.3 Update Documents
 
-```python
-# Python - Update documents
-def append_text(docs_service, document_id, text):
-    """
-    Append text to the end of a document.
+```typescript
+// TypeScript - Update documents
+import { docs_v1 } from 'googleapis';
 
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
-        text: Text to append
-    """
-    # Get the document to find the end index
-    document = get_document(docs_service, document_id)
-    end_index = document['body']['content'][-1]['endIndex'] - 1
+/**
+ * Append text to the end of a document.
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @param text - Text to append
+ */
+async function appendText(
+  docsService: docs_v1.Docs,
+  documentId: string,
+  text: string
+): Promise<void> {
+  // Get the document to find the end index
+  const document = await getDocument(docsService, documentId);
+  const content = document.body?.content || [];
+  const endIndex = content[content.length - 1]?.endIndex || 1;
+  const insertIndex = endIndex - 1;
 
-    requests = [
-        {
-            'insertText': {
-                'location': {'index': end_index},
-                'text': text
-            }
-        }
-    ]
+  const requests: docs_v1.Schema$Request[] = [
+    {
+      insertText: {
+        location: { index: insertIndex },
+        text,
+      },
+    },
+  ];
 
-    docs_service.documents().batchUpdate(
-        documentId=document_id,
-        body={'requests': requests}
-    ).execute()
-
-
-def insert_text_at_position(docs_service, document_id, text, index):
-    """
-    Insert text at a specific position in the document.
-
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
-        text: Text to insert
-        index: Position to insert at (1-based)
-    """
-    requests = [
-        {
-            'insertText': {
-                'location': {'index': index},
-                'text': text
-            }
-        }
-    ]
-
-    docs_service.documents().batchUpdate(
-        documentId=document_id,
-        body={'requests': requests}
-    ).execute()
+  await docsService.documents.batchUpdate({
+    documentId,
+    requestBody: { requests },
+  });
+}
 
 
-def replace_text(docs_service, document_id, old_text, new_text):
-    """
-    Replace all occurrences of text in a document.
+/**
+ * Insert text at a specific position in the document.
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @param text - Text to insert
+ * @param index - Position to insert at (1-based)
+ */
+async function insertTextAtPosition(
+  docsService: docs_v1.Docs,
+  documentId: string,
+  text: string,
+  index: number
+): Promise<void> {
+  const requests: docs_v1.Schema$Request[] = [
+    {
+      insertText: {
+        location: { index },
+        text,
+      },
+    },
+  ];
 
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
-        old_text: Text to find
-        new_text: Replacement text
-
-    Returns:
-        Number of replacements made
-    """
-    requests = [
-        {
-            'replaceAllText': {
-                'containsText': {
-                    'text': old_text,
-                    'matchCase': True
-                },
-                'replaceText': new_text
-            }
-        }
-    ]
-
-    result = docs_service.documents().batchUpdate(
-        documentId=document_id,
-        body={'requests': requests}
-    ).execute()
-
-    replies = result.get('replies', [])
-    if replies:
-        return replies[0].get('replaceAllText', {}).get('occurrencesChanged', 0)
-    return 0
+  await docsService.documents.batchUpdate({
+    documentId,
+    requestBody: { requests },
+  });
+}
 
 
-def delete_content_range(docs_service, document_id, start_index, end_index):
-    """
-    Delete content in a specific range.
-
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
-        start_index: Start index (1-based)
-        end_index: End index
-    """
-    requests = [
-        {
-            'deleteContentRange': {
-                'range': {
-                    'startIndex': start_index,
-                    'endIndex': end_index
-                }
-            }
-        }
-    ]
-
-    docs_service.documents().batchUpdate(
-        documentId=document_id,
-        body={'requests': requests}
-    ).execute()
-
-
-def add_heading(docs_service, document_id, text, heading_level=1):
-    """
-    Add a heading to the end of the document.
-
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
-        text: Heading text
-        heading_level: Heading level (1-6)
-    """
-    # Get the document to find the end index
-    document = get_document(docs_service, document_id)
-    end_index = document['body']['content'][-1]['endIndex'] - 1
-
-    heading_styles = {
-        1: 'HEADING_1',
-        2: 'HEADING_2',
-        3: 'HEADING_3',
-        4: 'HEADING_4',
-        5: 'HEADING_5',
-        6: 'HEADING_6'
-    }
-
-    requests = [
-        {
-            'insertText': {
-                'location': {'index': end_index},
-                'text': text + '\n'
-            }
+/**
+ * Replace all occurrences of text in a document.
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @param oldText - Text to find
+ * @param newText - Replacement text
+ * @returns Number of replacements made
+ */
+async function replaceText(
+  docsService: docs_v1.Docs,
+  documentId: string,
+  oldText: string,
+  newText: string
+): Promise<number> {
+  const requests: docs_v1.Schema$Request[] = [
+    {
+      replaceAllText: {
+        containsText: {
+          text: oldText,
+          matchCase: true,
         },
-        {
-            'updateParagraphStyle': {
-                'range': {
-                    'startIndex': end_index,
-                    'endIndex': end_index + len(text) + 1
-                },
-                'paragraphStyle': {
-                    'namedStyleType': heading_styles.get(heading_level, 'HEADING_1')
-                },
-                'fields': 'namedStyleType'
-            }
-        }
-    ]
+        replaceText: newText,
+      },
+    },
+  ];
 
-    docs_service.documents().batchUpdate(
-        documentId=document_id,
-        body={'requests': requests}
-    ).execute()
+  const response = await docsService.documents.batchUpdate({
+    documentId,
+    requestBody: { requests },
+  });
+
+  const replies = response.data.replies || [];
+  if (replies.length > 0) {
+    return replies[0].replaceAllText?.occurrencesChanged || 0;
+  }
+  return 0;
+}
+
+
+/**
+ * Delete content in a specific range.
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @param startIndex - Start index (1-based)
+ * @param endIndex - End index
+ */
+async function deleteContentRange(
+  docsService: docs_v1.Docs,
+  documentId: string,
+  startIndex: number,
+  endIndex: number
+): Promise<void> {
+  const requests: docs_v1.Schema$Request[] = [
+    {
+      deleteContentRange: {
+        range: {
+          startIndex,
+          endIndex,
+        },
+      },
+    },
+  ];
+
+  await docsService.documents.batchUpdate({
+    documentId,
+    requestBody: { requests },
+  });
+}
+
+
+/**
+ * Add a heading to the end of the document.
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @param text - Heading text
+ * @param headingLevel - Heading level (1-6)
+ */
+async function addHeading(
+  docsService: docs_v1.Docs,
+  documentId: string,
+  text: string,
+  headingLevel: 1 | 2 | 3 | 4 | 5 | 6 = 1
+): Promise<void> {
+  // Get the document to find the end index
+  const document = await getDocument(docsService, documentId);
+  const content = document.body?.content || [];
+  const endIndex = content[content.length - 1]?.endIndex || 1;
+  const insertIndex = endIndex - 1;
+
+  const headingStyles: Record<number, string> = {
+    1: 'HEADING_1',
+    2: 'HEADING_2',
+    3: 'HEADING_3',
+    4: 'HEADING_4',
+    5: 'HEADING_5',
+    6: 'HEADING_6',
+  };
+
+  const requests: docs_v1.Schema$Request[] = [
+    {
+      insertText: {
+        location: { index: insertIndex },
+        text: text + '\n',
+      },
+    },
+    {
+      updateParagraphStyle: {
+        range: {
+          startIndex: insertIndex,
+          endIndex: insertIndex + text.length + 1,
+        },
+        paragraphStyle: {
+          namedStyleType: headingStyles[headingLevel],
+        },
+        fields: 'namedStyleType',
+      },
+    },
+  ];
+
+  await docsService.documents.batchUpdate({
+    documentId,
+    requestBody: { requests },
+  });
+}
 ```
 
 ### 3.4 Search Within Documents
 
-```python
-# Python - Search within documents
-def search_in_document(docs_service, document_id, search_text):
-    """
-    Search for text within a document.
+```typescript
+// TypeScript - Search within documents
+import { docs_v1, drive_v3 } from 'googleapis';
 
-    Args:
-        docs_service: Docs API service instance
-        document_id: ID of the document
-        search_text: Text to search for
+interface TextMatch {
+  position: number;
+  context: string;
+  match: string;
+}
 
-    Returns:
-        List of matches with context
-    """
-    text = get_document_text(docs_service, document_id)
+/**
+ * Search for text within a document.
+ *
+ * @param docsService - Docs API service instance
+ * @param documentId - ID of the document
+ * @param searchText - Text to search for
+ * @returns List of matches with context
+ */
+async function searchInDocument(
+  docsService: docs_v1.Docs,
+  documentId: string,
+  searchText: string
+): Promise<TextMatch[]> {
+  const text = await getDocumentText(docsService, documentId);
 
-    matches = []
-    search_lower = search_text.lower()
-    text_lower = text.lower()
+  const matches: TextMatch[] = [];
+  const searchLower = searchText.toLowerCase();
+  const textLower = text.toLowerCase();
 
-    start = 0
-    while True:
-        index = text_lower.find(search_lower, start)
-        if index == -1:
-            break
+  let start = 0;
+  while (true) {
+    const index = textLower.indexOf(searchLower, start);
+    if (index === -1) {
+      break;
+    }
 
-        # Get context (50 chars before and after)
-        context_start = max(0, index - 50)
-        context_end = min(len(text), index + len(search_text) + 50)
+    // Get context (50 chars before and after)
+    const contextStart = Math.max(0, index - 50);
+    const contextEnd = Math.min(text.length, index + searchText.length + 50);
 
-        matches.append({
-            'position': index,
-            'context': text[context_start:context_end],
-            'match': text[index:index + len(search_text)]
-        })
+    matches.push({
+      position: index,
+      context: text.slice(contextStart, contextEnd),
+      match: text.slice(index, index + searchText.length),
+    });
 
-        start = index + 1
+    start = index + 1;
+  }
 
-    return matches
+  return matches;
+}
 
 
-def search_documents_for_text(drive_service, docs_service, search_text, folder_id=None):
-    """
-    Search across multiple documents for specific text.
+interface DocumentSearchResult {
+  documentId: string;
+  name: string;
+  matchCount: number;
+  matches: TextMatch[];
+}
 
-    Args:
-        drive_service: Drive API service instance
-        docs_service: Docs API service instance
-        search_text: Text to search for
-        folder_id: Optional folder to limit search
+/**
+ * Search across multiple documents for specific text.
+ *
+ * @param driveService - Drive API service instance
+ * @param docsService - Docs API service instance
+ * @param searchText - Text to search for
+ * @param folderId - Optional folder to limit search
+ * @returns List of documents containing the text
+ */
+async function searchDocumentsForText(
+  driveService: drive_v3.Drive,
+  docsService: docs_v1.Docs,
+  searchText: string,
+  folderId?: string
+): Promise<DocumentSearchResult[]> {
+  // First, use Drive's fullText search for efficiency
+  let query = `fullText contains '${searchText}' and mimeType = 'application/vnd.google-apps.document' and trashed = false`;
 
-    Returns:
-        List of documents containing the text
-    """
-    # First, use Drive's fullText search for efficiency
-    query = f"fullText contains '{search_text}' and mimeType = 'application/vnd.google-apps.document' and trashed = false"
+  if (folderId) {
+    query += ` and '${folderId}' in parents`;
+  }
 
-    if folder_id:
-        query += f" and '{folder_id}' in parents"
+  const files = await searchFiles(driveService, query);
 
-    files = search_files(drive_service, query)
+  const results: DocumentSearchResult[] = [];
+  for (const file of files) {
+    try {
+      const matches = await searchInDocument(docsService, file.id!, searchText);
+      if (matches.length > 0) {
+        results.push({
+          documentId: file.id!,
+          name: file.name!,
+          matchCount: matches.length,
+          matches: matches.slice(0, 5), // First 5 matches
+        });
+      }
+    } catch (e) {
+      console.error(`Error searching ${file.name}: ${e}`);
+    }
+  }
 
-    results = []
-    for file in files:
-        try:
-            matches = search_in_document(docs_service, file['id'], search_text)
-            if matches:
-                results.append({
-                    'documentId': file['id'],
-                    'name': file['name'],
-                    'matchCount': len(matches),
-                    'matches': matches[:5]  # First 5 matches
-                })
-        except Exception as e:
-            print(f"Error searching {file['name']}: {e}")
-
-    return results
+  return results;
+}
 ```
 
 ---
@@ -1404,473 +1709,583 @@ The Google Sheets API v4 provides comprehensive spreadsheet operations.
 
 ### 4.1 Create Spreadsheets
 
-```python
-# Python - Create spreadsheets
-def create_spreadsheet(sheets_service, title):
-    """
-    Create a new Google Spreadsheet.
+```typescript
+// TypeScript - Create spreadsheets
+import { sheets_v4 } from 'googleapis';
 
-    Args:
-        sheets_service: Sheets API service instance
-        title: Spreadsheet title
+/**
+ * Create a new Google Spreadsheet.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param title - Spreadsheet title
+ * @returns Created spreadsheet metadata
+ */
+async function createSpreadsheet(
+  sheetsService: sheets_v4.Sheets,
+  title: string
+): Promise<sheets_v4.Schema$Spreadsheet> {
+  const spreadsheet: sheets_v4.Schema$Spreadsheet = {
+    properties: {
+      title,
+    },
+  };
 
-    Returns:
-        Created spreadsheet metadata
-    """
-    spreadsheet = {
-        'properties': {
-            'title': title
-        }
-    }
+  const response = await sheetsService.spreadsheets.create({
+    requestBody: spreadsheet,
+    fields: 'spreadsheetId,spreadsheetUrl',
+  });
 
-    spreadsheet = sheets_service.spreadsheets().create(
-        body=spreadsheet,
-        fields='spreadsheetId,spreadsheetUrl'
-    ).execute()
-
-    return spreadsheet
-
-
-def create_spreadsheet_with_sheets(sheets_service, title, sheet_names):
-    """
-    Create a spreadsheet with multiple named sheets.
-
-    Args:
-        sheets_service: Sheets API service instance
-        title: Spreadsheet title
-        sheet_names: List of sheet names
-
-    Returns:
-        Created spreadsheet metadata
-    """
-    sheets = [{'properties': {'title': name}} for name in sheet_names]
-
-    spreadsheet = {
-        'properties': {'title': title},
-        'sheets': sheets
-    }
-
-    result = sheets_service.spreadsheets().create(
-        body=spreadsheet,
-        fields='spreadsheetId,spreadsheetUrl,sheets.properties'
-    ).execute()
-
-    return result
+  return response.data;
+}
 
 
-def create_spreadsheet_with_data(sheets_service, title, data, sheet_name='Sheet1'):
-    """
-    Create a spreadsheet and populate it with data.
+/**
+ * Create a spreadsheet with multiple named sheets.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param title - Spreadsheet title
+ * @param sheetNames - List of sheet names
+ * @returns Created spreadsheet metadata
+ */
+async function createSpreadsheetWithSheets(
+  sheetsService: sheets_v4.Sheets,
+  title: string,
+  sheetNames: string[]
+): Promise<sheets_v4.Schema$Spreadsheet> {
+  const sheets: sheets_v4.Schema$Sheet[] = sheetNames.map(name => ({
+    properties: { title: name },
+  }));
 
-    Args:
-        sheets_service: Sheets API service instance
-        title: Spreadsheet title
-        data: 2D list of values
-        sheet_name: Name of the sheet
+  const spreadsheet: sheets_v4.Schema$Spreadsheet = {
+    properties: { title },
+    sheets,
+  };
 
-    Returns:
-        Created spreadsheet metadata
-    """
-    # Create the spreadsheet
-    spreadsheet = create_spreadsheet(sheets_service, title)
-    spreadsheet_id = spreadsheet['spreadsheetId']
+  const response = await sheetsService.spreadsheets.create({
+    requestBody: spreadsheet,
+    fields: 'spreadsheetId,spreadsheetUrl,sheets.properties',
+  });
 
-    # Write the data
-    write_values(sheets_service, spreadsheet_id, f'{sheet_name}!A1', data)
+  return response.data;
+}
 
-    return spreadsheet
+
+/**
+ * Create a spreadsheet and populate it with data.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param title - Spreadsheet title
+ * @param data - 2D array of values
+ * @param sheetName - Name of the sheet
+ * @returns Created spreadsheet metadata
+ */
+async function createSpreadsheetWithData(
+  sheetsService: sheets_v4.Sheets,
+  title: string,
+  data: any[][],
+  sheetName: string = 'Sheet1'
+): Promise<sheets_v4.Schema$Spreadsheet> {
+  // Create the spreadsheet
+  const spreadsheet = await createSpreadsheet(sheetsService, title);
+  const spreadsheetId = spreadsheet.spreadsheetId!;
+
+  // Write the data
+  await writeValues(sheetsService, spreadsheetId, `${sheetName}!A1`, data);
+
+  return spreadsheet;
+}
 ```
 
 ### 4.2 Read Data
 
-```python
-# Python - Read spreadsheet data
-def get_spreadsheet(sheets_service, spreadsheet_id):
-    """
-    Get spreadsheet metadata.
+```typescript
+// TypeScript - Read spreadsheet data
+import { sheets_v4 } from 'googleapis';
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
+/**
+ * Get spreadsheet metadata.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @returns Spreadsheet metadata
+ */
+async function getSpreadsheet(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string
+): Promise<sheets_v4.Schema$Spreadsheet> {
+  const response = await sheetsService.spreadsheets.get({
+    spreadsheetId,
+  });
 
-    Returns:
-        Spreadsheet metadata
-    """
-    spreadsheet = sheets_service.spreadsheets().get(
-        spreadsheetId=spreadsheet_id
-    ).execute()
-
-    return spreadsheet
-
-
-def read_values(sheets_service, spreadsheet_id, range_name):
-    """
-    Read values from a spreadsheet range.
-
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        range_name: A1 notation range (e.g., 'Sheet1!A1:D10')
-
-    Returns:
-        2D list of values
-    """
-    result = sheets_service.spreadsheets().values().get(
-        spreadsheetId=spreadsheet_id,
-        range=range_name
-    ).execute()
-
-    return result.get('values', [])
+  return response.data;
+}
 
 
-def read_all_values(sheets_service, spreadsheet_id, sheet_name='Sheet1'):
-    """
-    Read all values from a sheet.
+/**
+ * Read values from a spreadsheet range.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param rangeName - A1 notation range (e.g., 'Sheet1!A1:D10')
+ * @returns 2D array of values
+ */
+async function readValues(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  rangeName: string
+): Promise<any[][]> {
+  const response = await sheetsService.spreadsheets.values.get({
+    spreadsheetId,
+    range: rangeName,
+  });
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        sheet_name: Name of the sheet
-
-    Returns:
-        2D list of all values
-    """
-    return read_values(sheets_service, spreadsheet_id, sheet_name)
+  return response.data.values || [];
+}
 
 
-def read_multiple_ranges(sheets_service, spreadsheet_id, ranges):
-    """
-    Read multiple ranges at once.
+/**
+ * Read all values from a sheet.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param sheetName - Name of the sheet
+ * @returns 2D array of all values
+ */
+async function readAllValues(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  sheetName: string = 'Sheet1'
+): Promise<any[][]> {
+  return readValues(sheetsService, spreadsheetId, sheetName);
+}
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        ranges: List of A1 notation ranges
 
-    Returns:
-        Dictionary mapping ranges to values
-    """
-    result = sheets_service.spreadsheets().values().batchGet(
-        spreadsheetId=spreadsheet_id,
-        ranges=ranges
-    ).execute()
+/**
+ * Read multiple ranges at once.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param ranges - List of A1 notation ranges
+ * @returns Dictionary mapping ranges to values
+ */
+async function readMultipleRanges(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  ranges: string[]
+): Promise<Record<string, any[][]>> {
+  const response = await sheetsService.spreadsheets.values.batchGet({
+    spreadsheetId,
+    ranges,
+  });
 
-    return {
-        vr['range']: vr.get('values', [])
-        for vr in result.get('valueRanges', [])
+  const result: Record<string, any[][]> = {};
+  for (const vr of response.data.valueRanges || []) {
+    if (vr.range) {
+      result[vr.range] = vr.values || [];
     }
+  }
+
+  return result;
+}
 
 
-def get_sheet_summary(sheets_service, spreadsheet_id):
-    """
-    Get a summary of the spreadsheet.
+interface SheetSummary {
+  sheetId: number;
+  title: string;
+  rowCount: number;
+  columnCount: number;
+}
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
+interface SpreadsheetSummary {
+  title: string | null | undefined;
+  spreadsheetId: string;
+  url: string | null | undefined;
+  sheets: SheetSummary[];
+}
 
-    Returns:
-        Dictionary with spreadsheet summary
-    """
-    spreadsheet = get_spreadsheet(sheets_service, spreadsheet_id)
+/**
+ * Get a summary of the spreadsheet.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @returns Dictionary with spreadsheet summary
+ */
+async function getSheetSummary(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string
+): Promise<SpreadsheetSummary> {
+  const spreadsheet = await getSpreadsheet(sheetsService, spreadsheetId);
 
-    summary = {
-        'title': spreadsheet['properties']['title'],
-        'spreadsheetId': spreadsheet_id,
-        'url': spreadsheet.get('spreadsheetUrl'),
-        'sheets': []
-    }
+  const summary: SpreadsheetSummary = {
+    title: spreadsheet.properties?.title,
+    spreadsheetId,
+    url: spreadsheet.spreadsheetUrl,
+    sheets: [],
+  };
 
-    for sheet in spreadsheet.get('sheets', []):
-        props = sheet['properties']
-        grid_props = props.get('gridProperties', {})
+  for (const sheet of spreadsheet.sheets || []) {
+    const props = sheet.properties;
+    const gridProps = props?.gridProperties;
 
-        summary['sheets'].append({
-            'sheetId': props['sheetId'],
-            'title': props['title'],
-            'rowCount': grid_props.get('rowCount', 0),
-            'columnCount': grid_props.get('columnCount', 0)
-        })
+    summary.sheets.push({
+      sheetId: props?.sheetId || 0,
+      title: props?.title || '',
+      rowCount: gridProps?.rowCount || 0,
+      columnCount: gridProps?.columnCount || 0,
+    });
+  }
 
-    return summary
+  return summary;
+}
 ```
 
 ### 4.3 Update Data
 
-```python
-# Python - Update spreadsheet data
-def write_values(sheets_service, spreadsheet_id, range_name, values):
-    """
-    Write values to a spreadsheet range.
+```typescript
+// TypeScript - Update spreadsheet data
+import { sheets_v4 } from 'googleapis';
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        range_name: A1 notation range
-        values: 2D list of values
+/**
+ * Write values to a spreadsheet range.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param rangeName - A1 notation range
+ * @param values - 2D array of values
+ * @returns Update result
+ */
+async function writeValues(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  rangeName: string,
+  values: any[][]
+): Promise<sheets_v4.Schema$UpdateValuesResponse> {
+  const response = await sheetsService.spreadsheets.values.update({
+    spreadsheetId,
+    range: rangeName,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values },
+  });
 
-    Returns:
-        Update result
-    """
-    body = {'values': values}
-
-    result = sheets_service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id,
-        range=range_name,
-        valueInputOption='USER_ENTERED',
-        body=body
-    ).execute()
-
-    return result
-
-
-def append_values(sheets_service, spreadsheet_id, range_name, values):
-    """
-    Append values after the last row of data.
-
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        range_name: A1 notation range (determines columns)
-        values: 2D list of values to append
-
-    Returns:
-        Append result
-    """
-    body = {'values': values}
-
-    result = sheets_service.spreadsheets().values().append(
-        spreadsheetId=spreadsheet_id,
-        range=range_name,
-        valueInputOption='USER_ENTERED',
-        insertDataOption='INSERT_ROWS',
-        body=body
-    ).execute()
-
-    return result
+  return response.data;
+}
 
 
-def clear_values(sheets_service, spreadsheet_id, range_name):
-    """
-    Clear values from a range.
+/**
+ * Append values after the last row of data.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param rangeName - A1 notation range (determines columns)
+ * @param values - 2D array of values to append
+ * @returns Append result
+ */
+async function appendValues(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  rangeName: string,
+  values: any[][]
+): Promise<sheets_v4.Schema$AppendValuesResponse> {
+  const response = await sheetsService.spreadsheets.values.append({
+    spreadsheetId,
+    range: rangeName,
+    valueInputOption: 'USER_ENTERED',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values },
+  });
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        range_name: A1 notation range
-    """
-    sheets_service.spreadsheets().values().clear(
-        spreadsheetId=spreadsheet_id,
-        range=range_name
-    ).execute()
-
-
-def update_multiple_ranges(sheets_service, spreadsheet_id, data):
-    """
-    Update multiple ranges at once.
-
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        data: Dictionary mapping ranges to values
-
-    Returns:
-        Update result
-    """
-    value_ranges = [
-        {'range': range_name, 'values': values}
-        for range_name, values in data.items()
-    ]
-
-    body = {
-        'valueInputOption': 'USER_ENTERED',
-        'data': value_ranges
-    }
-
-    result = sheets_service.spreadsheets().values().batchUpdate(
-        spreadsheetId=spreadsheet_id,
-        body=body
-    ).execute()
-
-    return result
+  return response.data;
+}
 
 
-def add_sheet(sheets_service, spreadsheet_id, sheet_name):
-    """
-    Add a new sheet to a spreadsheet.
-
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        sheet_name: Name for the new sheet
-
-    Returns:
-        New sheet properties
-    """
-    requests = [{
-        'addSheet': {
-            'properties': {
-                'title': sheet_name
-            }
-        }
-    }]
-
-    result = sheets_service.spreadsheets().batchUpdate(
-        spreadsheetId=spreadsheet_id,
-        body={'requests': requests}
-    ).execute()
-
-    return result['replies'][0]['addSheet']['properties']
+/**
+ * Clear values from a range.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param rangeName - A1 notation range
+ */
+async function clearValues(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  rangeName: string
+): Promise<void> {
+  await sheetsService.spreadsheets.values.clear({
+    spreadsheetId,
+    range: rangeName,
+  });
+}
 
 
-def delete_sheet(sheets_service, spreadsheet_id, sheet_id):
-    """
-    Delete a sheet from a spreadsheet.
+/**
+ * Update multiple ranges at once.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param data - Dictionary mapping ranges to values
+ * @returns Update result
+ */
+async function updateMultipleRanges(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  data: Record<string, any[][]>
+): Promise<sheets_v4.Schema$BatchUpdateValuesResponse> {
+  const valueRanges: sheets_v4.Schema$ValueRange[] = Object.entries(data).map(
+    ([range, values]) => ({ range, values })
+  );
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        sheet_id: ID of the sheet to delete
-    """
-    requests = [{
-        'deleteSheet': {
-            'sheetId': sheet_id
-        }
-    }]
+  const response = await sheetsService.spreadsheets.values.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      valueInputOption: 'USER_ENTERED',
+      data: valueRanges,
+    },
+  });
 
-    sheets_service.spreadsheets().batchUpdate(
-        spreadsheetId=spreadsheet_id,
-        body={'requests': requests}
-    ).execute()
+  return response.data;
+}
+
+
+/**
+ * Add a new sheet to a spreadsheet.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param sheetName - Name for the new sheet
+ * @returns New sheet properties
+ */
+async function addSheet(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  sheetName: string
+): Promise<sheets_v4.Schema$SheetProperties> {
+  const requests: sheets_v4.Schema$Request[] = [
+    {
+      addSheet: {
+        properties: {
+          title: sheetName,
+        },
+      },
+    },
+  ];
+
+  const response = await sheetsService.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: { requests },
+  });
+
+  return response.data.replies![0].addSheet!.properties!;
+}
+
+
+/**
+ * Delete a sheet from a spreadsheet.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param sheetId - ID of the sheet to delete
+ */
+async function deleteSheet(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  sheetId: number
+): Promise<void> {
+  const requests: sheets_v4.Schema$Request[] = [
+    {
+      deleteSheet: {
+        sheetId,
+      },
+    },
+  ];
+
+  await sheetsService.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: { requests },
+  });
+}
 ```
 
 ### 4.4 Search and Query Data
 
-```python
-# Python - Search and query spreadsheet data
-def find_in_sheet(sheets_service, spreadsheet_id, search_text, sheet_name='Sheet1'):
-    """
-    Find cells containing specific text.
+```typescript
+// TypeScript - Search and query spreadsheet data
+import { sheets_v4 } from 'googleapis';
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        search_text: Text to search for
-        sheet_name: Sheet to search
+interface CellMatch {
+  cell: string;
+  row: number;
+  column: number;
+  value: any;
+}
 
-    Returns:
-        List of matches with cell references
-    """
-    values = read_all_values(sheets_service, spreadsheet_id, sheet_name)
+/**
+ * Find cells containing specific text.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param searchText - Text to search for
+ * @param sheetName - Sheet to search
+ * @returns List of matches with cell references
+ */
+async function findInSheet(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  searchText: string,
+  sheetName: string = 'Sheet1'
+): Promise<CellMatch[]> {
+  const values = await readAllValues(sheetsService, spreadsheetId, sheetName);
 
-    matches = []
-    search_lower = search_text.lower()
+  const matches: CellMatch[] = [];
+  const searchLower = searchText.toLowerCase();
 
-    for row_idx, row in enumerate(values):
-        for col_idx, cell in enumerate(row):
-            if search_lower in str(cell).lower():
-                col_letter = chr(ord('A') + col_idx) if col_idx < 26 else f'{chr(ord("A") + col_idx // 26 - 1)}{chr(ord("A") + col_idx % 26)}'
+  for (let rowIdx = 0; rowIdx < values.length; rowIdx++) {
+    const row = values[rowIdx];
+    for (let colIdx = 0; colIdx < row.length; colIdx++) {
+      const cell = row[colIdx];
+      if (String(cell).toLowerCase().includes(searchLower)) {
+        const colLetter = colIdx < 26
+          ? String.fromCharCode('A'.charCodeAt(0) + colIdx)
+          : String.fromCharCode('A'.charCodeAt(0) + Math.floor(colIdx / 26) - 1) +
+            String.fromCharCode('A'.charCodeAt(0) + (colIdx % 26));
 
-                matches.append({
-                    'cell': f'{col_letter}{row_idx + 1}',
-                    'row': row_idx + 1,
-                    'column': col_idx + 1,
-                    'value': cell
-                })
+        matches.push({
+          cell: `${colLetter}${rowIdx + 1}`,
+          row: rowIdx + 1,
+          column: colIdx + 1,
+          value: cell,
+        });
+      }
+    }
+  }
 
-    return matches
-
-
-def query_sheet(sheets_service, spreadsheet_id, column_filters, sheet_name='Sheet1'):
-    """
-    Query sheet data with column filters.
-
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        column_filters: Dict of {column_index: filter_value}
-        sheet_name: Sheet to query
-
-    Returns:
-        Filtered rows
-    """
-    values = read_all_values(sheets_service, spreadsheet_id, sheet_name)
-
-    if not values:
-        return []
-
-    headers = values[0] if values else []
-    results = []
-
-    for row in values[1:]:  # Skip header row
-        match = True
-        for col_idx, filter_value in column_filters.items():
-            if col_idx >= len(row):
-                match = False
-                break
-            if str(filter_value).lower() not in str(row[col_idx]).lower():
-                match = False
-                break
-
-        if match:
-            results.append(dict(zip(headers, row)))
-
-    return results
+  return matches;
+}
 
 
-def get_column_values(sheets_service, spreadsheet_id, column, sheet_name='Sheet1'):
-    """
-    Get all values from a specific column.
+/**
+ * Query sheet data with column filters.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param columnFilters - Dict of {column_index: filter_value}
+ * @param sheetName - Sheet to query
+ * @returns Filtered rows
+ */
+async function querySheet(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  columnFilters: Record<number, string>,
+  sheetName: string = 'Sheet1'
+): Promise<Record<string, any>[]> {
+  const values = await readAllValues(sheetsService, spreadsheetId, sheetName);
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        column: Column letter (e.g., 'A') or index (0-based)
-        sheet_name: Sheet name
+  if (values.length === 0) {
+    return [];
+  }
 
-    Returns:
-        List of column values
-    """
-    if isinstance(column, int):
-        column = chr(ord('A') + column)
+  const headers = values[0] || [];
+  const results: Record<string, any>[] = [];
 
-    range_name = f'{sheet_name}!{column}:{column}'
-    values = read_values(sheets_service, spreadsheet_id, range_name)
+  for (const row of values.slice(1)) {  // Skip header row
+    let match = true;
+    for (const [colIdx, filterValue] of Object.entries(columnFilters)) {
+      const idx = parseInt(colIdx);
+      if (idx >= row.length) {
+        match = false;
+        break;
+      }
+      if (!String(row[idx]).toLowerCase().includes(filterValue.toLowerCase())) {
+        match = false;
+        break;
+      }
+    }
 
-    return [row[0] if row else '' for row in values]
+    if (match) {
+      const rowObj: Record<string, any> = {};
+      headers.forEach((header, i) => {
+        rowObj[header] = row[i];
+      });
+      results.push(rowObj);
+    }
+  }
+
+  return results;
+}
 
 
-def find_row_by_value(sheets_service, spreadsheet_id, column, value, sheet_name='Sheet1'):
-    """
-    Find a row by a value in a specific column.
+/**
+ * Get all values from a specific column.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param column - Column letter (e.g., 'A') or index (0-based)
+ * @param sheetName - Sheet name
+ * @returns List of column values
+ */
+async function getColumnValues(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  column: string | number,
+  sheetName: string = 'Sheet1'
+): Promise<any[]> {
+  let colLetter: string;
+  if (typeof column === 'number') {
+    colLetter = String.fromCharCode('A'.charCodeAt(0) + column);
+  } else {
+    colLetter = column;
+  }
 
-    Args:
-        sheets_service: Sheets API service instance
-        spreadsheet_id: ID of the spreadsheet
-        column: Column to search
-        value: Value to find
-        sheet_name: Sheet name
+  const rangeName = `${sheetName}!${colLetter}:${colLetter}`;
+  const values = await readValues(sheetsService, spreadsheetId, rangeName);
 
-    Returns:
-        Row data as dictionary (with headers) or None
-    """
-    values = read_all_values(sheets_service, spreadsheet_id, sheet_name)
+  return values.map(row => row[0] || '');
+}
 
-    if not values or len(values) < 2:
-        return None
 
-    headers = values[0]
+/**
+ * Find a row by a value in a specific column.
+ *
+ * @param sheetsService - Sheets API service instance
+ * @param spreadsheetId - ID of the spreadsheet
+ * @param column - Column to search
+ * @param value - Value to find
+ * @param sheetName - Sheet name
+ * @returns Row data as dictionary (with headers) or null
+ */
+async function findRowByValue(
+  sheetsService: sheets_v4.Sheets,
+  spreadsheetId: string,
+  column: string | number,
+  value: any,
+  sheetName: string = 'Sheet1'
+): Promise<Record<string, any> | null> {
+  const values = await readAllValues(sheetsService, spreadsheetId, sheetName);
 
-    if isinstance(column, str):
-        col_idx = ord(column.upper()) - ord('A')
-    else:
-        col_idx = column
+  if (values.length < 2) {
+    return null;
+  }
 
-    for row in values[1:]:
-        if col_idx < len(row) and str(row[col_idx]) == str(value):
-            return dict(zip(headers, row))
+  const headers = values[0];
 
-    return None
+  let colIdx: number;
+  if (typeof column === 'string') {
+    colIdx = column.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
+  } else {
+    colIdx = column;
+  }
+
+  for (const row of values.slice(1)) {
+    if (colIdx < row.length && String(row[colIdx]) === String(value)) {
+      const rowObj: Record<string, any> = {};
+      headers.forEach((header, i) => {
+        rowObj[header] = row[i];
+      });
+      return rowObj;
+    }
+  }
+
+  return null;
+}
 ```
 
 ---
@@ -1881,878 +2296,421 @@ The Google Slides API allows you to create and modify presentations.
 
 ### 5.1 Create Presentations
 
-```python
-# Python - Create presentations
-def create_presentation(slides_service, title):
-    """
-    Create a new Google Slides presentation.
+```typescript
+// TypeScript - Create presentations
+import { slides_v1 } from 'googleapis';
 
-    Args:
-        slides_service: Slides API service instance
-        title: Presentation title
+/**
+ * Create a new Google Slides presentation.
+ *
+ * @param slidesService - Slides API service instance
+ * @param title - Presentation title
+ * @returns Created presentation metadata
+ */
+async function createPresentation(
+  slidesService: slides_v1.Slides,
+  title: string
+): Promise<slides_v1.Schema$Presentation> {
+  const presentation: slides_v1.Schema$Presentation = {
+    title,
+  };
 
-    Returns:
-        Created presentation metadata
-    """
-    presentation = {
-        'title': title
-    }
+  const response = await slidesService.presentations.create({
+    requestBody: presentation,
+  });
 
-    presentation = slides_service.presentations().create(
-        body=presentation
-    ).execute()
-
-    return presentation
+  return response.data;
+}
 
 
-def create_presentation_with_slides(slides_service, title, slide_count=5):
-    """
-    Create a presentation with multiple blank slides.
+/**
+ * Create a presentation with multiple blank slides.
+ *
+ * @param slidesService - Slides API service instance
+ * @param title - Presentation title
+ * @param slideCount - Number of slides to create
+ * @returns Created presentation
+ */
+async function createPresentationWithSlides(
+  slidesService: slides_v1.Slides,
+  title: string,
+  slideCount: number = 5
+): Promise<slides_v1.Schema$Presentation> {
+  const presentation = await createPresentation(slidesService, title);
+  const presentationId = presentation.presentationId!;
 
-    Args:
-        slides_service: Slides API service instance
-        title: Presentation title
-        slide_count: Number of slides to create
+  // Add additional slides (first slide is created automatically)
+  const requests: slides_v1.Schema$Request[] = [];
+  for (let i = 0; i < slideCount - 1; i++) {
+    requests.push({
+      createSlide: {
+        insertionIndex: i + 1,
+        slideLayoutReference: {
+          predefinedLayout: 'BLANK',
+        },
+      },
+    });
+  }
 
-    Returns:
-        Created presentation
-    """
-    presentation = create_presentation(slides_service, title)
-    presentation_id = presentation['presentationId']
+  if (requests.length > 0) {
+    await slidesService.presentations.batchUpdate({
+      presentationId,
+      requestBody: { requests },
+    });
+  }
 
-    # Add additional slides (first slide is created automatically)
-    requests = []
-    for i in range(slide_count - 1):
-        requests.append({
-            'createSlide': {
-                'insertionIndex': i + 1,
-                'slideLayoutReference': {
-                    'predefinedLayout': 'BLANK'
-                }
-            }
-        })
-
-    if requests:
-        slides_service.presentations().batchUpdate(
-            presentationId=presentation_id,
-            body={'requests': requests}
-        ).execute()
-
-    return presentation
+  return presentation;
+}
 ```
 
 ### 5.2 Read Presentations
 
-```python
-# Python - Read presentations
-def get_presentation(slides_service, presentation_id):
-    """
-    Get presentation metadata and content.
+```typescript
+// TypeScript - Read presentations
+import { slides_v1 } from 'googleapis';
 
-    Args:
-        slides_service: Slides API service instance
-        presentation_id: ID of the presentation
+/**
+ * Get presentation metadata and content.
+ *
+ * @param slidesService - Slides API service instance
+ * @param presentationId - ID of the presentation
+ * @returns Presentation object
+ */
+async function getPresentation(
+  slidesService: slides_v1.Slides,
+  presentationId: string
+): Promise<slides_v1.Schema$Presentation> {
+  const response = await slidesService.presentations.get({
+    presentationId,
+  });
 
-    Returns:
-        Presentation object
-    """
-    presentation = slides_service.presentations().get(
-        presentationId=presentation_id
-    ).execute()
-
-    return presentation
+  return response.data;
+}
 
 
-def get_presentation_summary(slides_service, presentation_id):
-    """
-    Get a summary of the presentation.
+interface SlideInfo {
+  slideNumber: number;
+  objectId: string;
+  textContent: string[];
+}
 
-    Args:
-        slides_service: Slides API service instance
-        presentation_id: ID of the presentation
+interface PresentationSummary {
+  title: string | null | undefined;
+  presentationId: string;
+  slideCount: number;
+  slides: SlideInfo[];
+}
 
-    Returns:
-        Dictionary with presentation summary
-    """
-    presentation = get_presentation(slides_service, presentation_id)
+/**
+ * Get a summary of the presentation.
+ *
+ * @param slidesService - Slides API service instance
+ * @param presentationId - ID of the presentation
+ * @returns Dictionary with presentation summary
+ */
+async function getPresentationSummary(
+  slidesService: slides_v1.Slides,
+  presentationId: string
+): Promise<PresentationSummary> {
+  const presentation = await getPresentation(slidesService, presentationId);
 
-    summary = {
-        'title': presentation.get('title'),
-        'presentationId': presentation_id,
-        'slideCount': len(presentation.get('slides', [])),
-        'slides': []
+  const summary: PresentationSummary = {
+    title: presentation.title,
+    presentationId,
+    slideCount: presentation.slides?.length || 0,
+    slides: [],
+  };
+
+  for (let idx = 0; idx < (presentation.slides || []).length; idx++) {
+    const slide = presentation.slides![idx];
+    const slideInfo: SlideInfo = {
+      slideNumber: idx + 1,
+      objectId: slide.objectId!,
+      textContent: [],
+    };
+
+    // Extract text from slide elements
+    for (const element of slide.pageElements || []) {
+      if (element.shape?.text) {
+        const textElements = element.shape.text.textElements || [];
+        for (const textEl of textElements) {
+          if (textEl.textRun) {
+            const content = (textEl.textRun.content || '').trim();
+            if (content) {
+              slideInfo.textContent.push(content);
+            }
+          }
+        }
+      }
     }
 
-    for idx, slide in enumerate(presentation.get('slides', [])):
-        slide_info = {
-            'slideNumber': idx + 1,
-            'objectId': slide['objectId'],
-            'textContent': []
+    summary.slides.push(slideInfo);
+  }
+
+  return summary;
+}
+
+
+/**
+ * Get all text content from a specific slide.
+ *
+ * @param slidesService - Slides API service instance
+ * @param presentationId - ID of the presentation
+ * @param slideIndex - Index of the slide (0-based)
+ * @returns List of text strings from the slide
+ */
+async function getSlideText(
+  slidesService: slides_v1.Slides,
+  presentationId: string,
+  slideIndex: number = 0
+): Promise<string[]> {
+  const presentation = await getPresentation(slidesService, presentationId);
+  const slides = presentation.slides || [];
+
+  if (slideIndex >= slides.length) {
+    return [];
+  }
+
+  const slide = slides[slideIndex];
+  const textContent: string[] = [];
+
+  for (const element of slide.pageElements || []) {
+    if (element.shape?.text) {
+      const textElements = element.shape.text.textElements || [];
+      for (const textEl of textElements) {
+        if (textEl.textRun) {
+          const content = (textEl.textRun.content || '').trim();
+          if (content) {
+            textContent.push(content);
+          }
         }
+      }
+    }
+  }
 
-        # Extract text from slide elements
-        for element in slide.get('pageElements', []):
-            if 'shape' in element and 'text' in element['shape']:
-                text_elements = element['shape']['text'].get('textElements', [])
-                for text_el in text_elements:
-                    if 'textRun' in text_el:
-                        content = text_el['textRun'].get('content', '').strip()
-                        if content:
-                            slide_info['textContent'].append(content)
-
-        summary['slides'].append(slide_info)
-
-    return summary
+  return textContent;
+}
 
 
-def get_slide_text(slides_service, presentation_id, slide_index=0):
-    """
-    Get all text content from a specific slide.
+/**
+ * Get all text content from the entire presentation.
+ *
+ * @param slidesService - Slides API service instance
+ * @param presentationId - ID of the presentation
+ * @returns Dictionary mapping slide numbers to text content
+ */
+async function getAllPresentationText(
+  slidesService: slides_v1.Slides,
+  presentationId: string
+): Promise<Record<number, string[]>> {
+  const presentation = await getPresentation(slidesService, presentationId);
+  const allText: Record<number, string[]> = {};
 
-    Args:
-        slides_service: Slides API service instance
-        presentation_id: ID of the presentation
-        slide_index: Index of the slide (0-based)
+  for (let idx = 0; idx < (presentation.slides || []).length; idx++) {
+    const slide = presentation.slides![idx];
+    const slideText: string[] = [];
 
-    Returns:
-        List of text strings from the slide
-    """
-    presentation = get_presentation(slides_service, presentation_id)
-    slides = presentation.get('slides', [])
+    for (const element of slide.pageElements || []) {
+      if (element.shape?.text) {
+        const textElements = element.shape.text.textElements || [];
+        for (const textEl of textElements) {
+          if (textEl.textRun) {
+            const content = (textEl.textRun.content || '').trim();
+            if (content) {
+              slideText.push(content);
+            }
+          }
+        }
+      }
+    }
 
-    if slide_index >= len(slides):
-        return []
+    allText[idx + 1] = slideText;
+  }
 
-    slide = slides[slide_index]
-    text_content = []
-
-    for element in slide.get('pageElements', []):
-        if 'shape' in element and 'text' in element['shape']:
-            text_elements = element['shape']['text'].get('textElements', [])
-            for text_el in text_elements:
-                if 'textRun' in text_el:
-                    content = text_el['textRun'].get('content', '').strip()
-                    if content:
-                        text_content.append(content)
-
-    return text_content
-
-
-def get_all_presentation_text(slides_service, presentation_id):
-    """
-    Get all text content from the entire presentation.
-
-    Args:
-        slides_service: Slides API service instance
-        presentation_id: ID of the presentation
-
-    Returns:
-        Dictionary mapping slide numbers to text content
-    """
-    presentation = get_presentation(slides_service, presentation_id)
-    all_text = {}
-
-    for idx, slide in enumerate(presentation.get('slides', [])):
-        slide_text = []
-
-        for element in slide.get('pageElements', []):
-            if 'shape' in element and 'text' in element['shape']:
-                text_elements = element['shape']['text'].get('textElements', [])
-                for text_el in text_elements:
-                    if 'textRun' in text_el:
-                        content = text_el['textRun'].get('content', '').strip()
-                        if content:
-                            slide_text.append(content)
-
-        all_text[idx + 1] = slide_text
-
-    return all_text
+  return allText;
+}
 ```
 
 ### 5.3 Update Presentations
 
-```python
-# Python - Update presentations
-def add_slide(slides_service, presentation_id, layout='BLANK', insertion_index=None):
-    """
-    Add a new slide to the presentation.
+```typescript
+// TypeScript - Update presentations
+import { slides_v1 } from 'googleapis';
+import { v4 as uuidv4 } from 'uuid';
 
-    Args:
-        slides_service: Slides API service instance
-        presentation_id: ID of the presentation
-        layout: Slide layout (BLANK, TITLE, TITLE_AND_BODY, etc.)
-        insertion_index: Position to insert (None = end)
+type PredefinedLayout = 'BLANK' | 'TITLE' | 'TITLE_AND_BODY' | 'TITLE_AND_TWO_COLUMNS' | 'TITLE_ONLY' | 'SECTION_HEADER' | 'SECTION_TITLE_AND_DESCRIPTION' | 'ONE_COLUMN_TEXT' | 'MAIN_POINT' | 'BIG_NUMBER';
 
-    Returns:
-        Created slide info
-    """
-    request = {
-        'createSlide': {
-            'slideLayoutReference': {
-                'predefinedLayout': layout
-            }
-        }
-    }
+/**
+ * Add a new slide to the presentation.
+ *
+ * @param slidesService - Slides API service instance
+ * @param presentationId - ID of the presentation
+ * @param layout - Slide layout (BLANK, TITLE, TITLE_AND_BODY, etc.)
+ * @param insertionIndex - Position to insert (undefined = end)
+ * @returns Created slide info
+ */
+async function addSlide(
+  slidesService: slides_v1.Slides,
+  presentationId: string,
+  layout: PredefinedLayout = 'BLANK',
+  insertionIndex?: number
+): Promise<slides_v1.Schema$CreateSlideResponse> {
+  const request: slides_v1.Schema$Request = {
+    createSlide: {
+      slideLayoutReference: {
+        predefinedLayout: layout,
+      },
+    },
+  };
 
-    if insertion_index is not None:
-        request['createSlide']['insertionIndex'] = insertion_index
+  if (insertionIndex !== undefined) {
+    request.createSlide!.insertionIndex = insertionIndex;
+  }
 
-    result = slides_service.presentations().batchUpdate(
-        presentationId=presentation_id,
-        body={'requests': [request]}
-    ).execute()
+  const response = await slidesService.presentations.batchUpdate({
+    presentationId,
+    requestBody: { requests: [request] },
+  });
 
-    return result['replies'][0]['createSlide']
-
-
-def delete_slide(slides_service, presentation_id, slide_object_id):
-    """
-    Delete a slide from the presentation.
-
-    Args:
-        slides_service: Slides API service instance
-        presentation_id: ID of the presentation
-        slide_object_id: Object ID of the slide to delete
-    """
-    requests = [{
-        'deleteObject': {
-            'objectId': slide_object_id
-        }
-    }]
-
-    slides_service.presentations().batchUpdate(
-        presentationId=presentation_id,
-        body={'requests': requests}
-    ).execute()
+  return response.data.replies![0].createSlide!;
+}
 
 
-def add_text_box(slides_service, presentation_id, slide_object_id, text,
-                 x=100, y=100, width=300, height=50):
-    """
-    Add a text box to a slide.
+/**
+ * Delete a slide from the presentation.
+ *
+ * @param slidesService - Slides API service instance
+ * @param presentationId - ID of the presentation
+ * @param slideObjectId - Object ID of the slide to delete
+ */
+async function deleteSlide(
+  slidesService: slides_v1.Slides,
+  presentationId: string,
+  slideObjectId: string
+): Promise<void> {
+  const requests: slides_v1.Schema$Request[] = [
+    {
+      deleteObject: {
+        objectId: slideObjectId,
+      },
+    },
+  ];
 
-    Args:
-        slides_service: Slides API service instance
-        presentation_id: ID of the presentation
-        slide_object_id: Object ID of the slide
-        text: Text content
-        x, y: Position in points
-        width, height: Size in points
+  await slidesService.presentations.batchUpdate({
+    presentationId,
+    requestBody: { requests },
+  });
+}
 
-    Returns:
-        Created element info
-    """
-    import uuid
-    element_id = f'textbox_{uuid.uuid4().hex[:8]}'
 
-    requests = [
-        {
-            'createShape': {
-                'objectId': element_id,
-                'shapeType': 'TEXT_BOX',
-                'elementProperties': {
-                    'pageObjectId': slide_object_id,
-                    'size': {
-                        'width': {'magnitude': width, 'unit': 'PT'},
-                        'height': {'magnitude': height, 'unit': 'PT'}
-                    },
-                    'transform': {
-                        'scaleX': 1,
-                        'scaleY': 1,
-                        'translateX': x,
-                        'translateY': y,
-                        'unit': 'PT'
-                    }
-                }
-            }
+/**
+ * Add a text box to a slide.
+ *
+ * @param slidesService - Slides API service instance
+ * @param presentationId - ID of the presentation
+ * @param slideObjectId - Object ID of the slide
+ * @param text - Text content
+ * @param x - X position in points
+ * @param y - Y position in points
+ * @param width - Width in points
+ * @param height - Height in points
+ * @returns Created element info
+ */
+async function addTextBox(
+  slidesService: slides_v1.Slides,
+  presentationId: string,
+  slideObjectId: string,
+  text: string,
+  x: number = 100,
+  y: number = 100,
+  width: number = 300,
+  height: number = 50
+): Promise<slides_v1.Schema$BatchUpdatePresentationResponse> {
+  const elementId = `textbox_${uuidv4().slice(0, 8)}`;
+
+  const requests: slides_v1.Schema$Request[] = [
+    {
+      createShape: {
+        objectId: elementId,
+        shapeType: 'TEXT_BOX',
+        elementProperties: {
+          pageObjectId: slideObjectId,
+          size: {
+            width: { magnitude: width, unit: 'PT' },
+            height: { magnitude: height, unit: 'PT' },
+          },
+          transform: {
+            scaleX: 1,
+            scaleY: 1,
+            translateX: x,
+            translateY: y,
+            unit: 'PT',
+          },
         },
-        {
-            'insertText': {
-                'objectId': element_id,
-                'text': text
-            }
-        }
-    ]
+      },
+    },
+    {
+      insertText: {
+        objectId: elementId,
+        text,
+      },
+    },
+  ];
 
-    result = slides_service.presentations().batchUpdate(
-        presentationId=presentation_id,
-        body={'requests': requests}
-    ).execute()
+  const response = await slidesService.presentations.batchUpdate({
+    presentationId,
+    requestBody: { requests },
+  });
 
-    return result
+  return response.data;
+}
 
 
-def replace_text_in_presentation(slides_service, presentation_id, old_text, new_text):
-    """
-    Replace all occurrences of text in the presentation.
+/**
+ * Replace all occurrences of text in the presentation.
+ *
+ * @param slidesService - Slides API service instance
+ * @param presentationId - ID of the presentation
+ * @param oldText - Text to find
+ * @param newText - Replacement text
+ * @returns Number of replacements
+ */
+async function replaceTextInPresentation(
+  slidesService: slides_v1.Slides,
+  presentationId: string,
+  oldText: string,
+  newText: string
+): Promise<number> {
+  const requests: slides_v1.Schema$Request[] = [
+    {
+      replaceAllText: {
+        containsText: {
+          text: oldText,
+          matchCase: true,
+        },
+        replaceText: newText,
+      },
+    },
+  ];
 
-    Args:
-        slides_service: Slides API service instance
-        presentation_id: ID of the presentation
-        old_text: Text to find
-        new_text: Replacement text
+  const response = await slidesService.presentations.batchUpdate({
+    presentationId,
+    requestBody: { requests },
+  });
 
-    Returns:
-        Number of replacements
-    """
-    requests = [{
-        'replaceAllText': {
-            'containsText': {
-                'text': old_text,
-                'matchCase': True
-            },
-            'replaceText': new_text
-        }
-    }]
-
-    result = slides_service.presentations().batchUpdate(
-        presentationId=presentation_id,
-        body={'requests': requests}
-    ).execute()
-
-    replies = result.get('replies', [])
-    if replies:
-        return replies[0].get('replaceAllText', {}).get('occurrencesChanged', 0)
-    return 0
+  const replies = response.data.replies || [];
+  if (replies.length > 0) {
+    return replies[0].replaceAllText?.occurrencesChanged || 0;
+  }
+  return 0;
+}
 ```
 
 ---
 
-## 6. Python Implementation
+## 6. TypeScript Implementation
 
 ### 6.1 Environment Setup
-
-```bash
-# Create and activate virtual environment
-uv venv
-source .venv/bin/activate
-
-# Install required packages
-uv add google-api-python-client google-auth-httplib2 google-auth-oauthlib
-```
-
-### 6.2 Complete Authentication Module
-
-Create `google_workspace_auth.py`:
-
-```python
-"""Google Workspace APIs Authentication Module."""
-import os
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-
-# Comprehensive scopes for full access
-SCOPES = [
-    'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/documents',
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/presentations',
-]
-
-
-def get_credentials(credentials_path: str = 'credentials.json',
-                   token_path: str = 'token.json',
-                   scopes: list = None):
-    """
-    Get or refresh OAuth credentials.
-
-    Args:
-        credentials_path: Path to OAuth credentials JSON
-        token_path: Path to store/retrieve access tokens
-        scopes: List of OAuth scopes (defaults to SCOPES)
-
-    Returns:
-        Authenticated credentials object
-    """
-    if scopes is None:
-        scopes = SCOPES
-
-    if not os.path.exists(credentials_path):
-        raise FileNotFoundError(
-            f"Credentials file not found at {credentials_path}. "
-            "Download it from Google Cloud Console."
-        )
-
-    creds = None
-
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, scopes)
-
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                credentials_path, scopes
-            )
-            creds = flow.run_local_server(port=0)
-
-        with open(token_path, 'w') as token:
-            token.write(creds.to_json())
-
-    return creds
-
-
-def get_drive_service(credentials_path: str = 'credentials.json',
-                      token_path: str = 'token.json'):
-    """Get Google Drive API service instance."""
-    creds = get_credentials(credentials_path, token_path)
-    return build('drive', 'v3', credentials=creds)
-
-
-def get_docs_service(credentials_path: str = 'credentials.json',
-                     token_path: str = 'token.json'):
-    """Get Google Docs API service instance."""
-    creds = get_credentials(credentials_path, token_path)
-    return build('docs', 'v1', credentials=creds)
-
-
-def get_sheets_service(credentials_path: str = 'credentials.json',
-                       token_path: str = 'token.json'):
-    """Get Google Sheets API service instance."""
-    creds = get_credentials(credentials_path, token_path)
-    return build('sheets', 'v4', credentials=creds)
-
-
-def get_slides_service(credentials_path: str = 'credentials.json',
-                       token_path: str = 'token.json'):
-    """Get Google Slides API service instance."""
-    creds = get_credentials(credentials_path, token_path)
-    return build('slides', 'v1', credentials=creds)
-
-
-def get_all_services(credentials_path: str = 'credentials.json',
-                     token_path: str = 'token.json'):
-    """
-    Get all Google Workspace API service instances.
-
-    Returns:
-        Dictionary with 'drive', 'docs', 'sheets', 'slides' services
-    """
-    creds = get_credentials(credentials_path, token_path)
-
-    return {
-        'drive': build('drive', 'v3', credentials=creds),
-        'docs': build('docs', 'v1', credentials=creds),
-        'sheets': build('sheets', 'v4', credentials=creds),
-        'slides': build('slides', 'v1', credentials=creds),
-    }
-```
-
-### 6.3 Complete Drive Manager Module
-
-Create `drive_manager.py`:
-
-```python
-"""Google Drive Management Module - Complete Implementation."""
-from google_workspace_auth import get_drive_service
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-import io
-import os
-
-
-class DriveManager:
-    """Manager class for Google Drive operations."""
-
-    def __init__(self, credentials_path='credentials.json', token_path='token.json'):
-        """Initialize with credentials."""
-        self.service = get_drive_service(credentials_path, token_path)
-
-    # ==================== FILE OPERATIONS ====================
-
-    def list_files(self, query=None, page_size=100, order_by='modifiedTime desc'):
-        """List files with optional query filter."""
-        files = []
-        page_token = None
-
-        while True:
-            params = {
-                'pageSize': min(page_size, 1000),
-                'fields': 'nextPageToken, files(id, name, mimeType, parents, createdTime, modifiedTime, owners, size, webViewLink)',
-                'orderBy': order_by,
-                'supportsAllDrives': True,
-            }
-
-            if query:
-                params['q'] = query
-            if page_token:
-                params['pageToken'] = page_token
-
-            results = self.service.files().list(**params).execute()
-            files.extend(results.get('files', []))
-
-            page_token = results.get('nextPageToken')
-            if not page_token or len(files) >= page_size:
-                break
-
-        return files[:page_size]
-
-    def get_file(self, file_id):
-        """Get file metadata."""
-        return self.service.files().get(
-            fileId=file_id,
-            fields='*',
-            supportsAllDrives=True
-        ).execute()
-
-    def create_folder(self, name, parent_id=None):
-        """Create a folder."""
-        metadata = {
-            'name': name,
-            'mimeType': 'application/vnd.google-apps.folder'
-        }
-        if parent_id:
-            metadata['parents'] = [parent_id]
-
-        return self.service.files().create(
-            body=metadata,
-            fields='id, name, webViewLink'
-        ).execute()
-
-    def upload_file(self, file_path, name=None, parent_id=None, mime_type=None):
-        """Upload a file."""
-        if name is None:
-            name = os.path.basename(file_path)
-
-        metadata = {'name': name}
-        if parent_id:
-            metadata['parents'] = [parent_id]
-
-        media = MediaFileUpload(file_path, mimetype=mime_type, resumable=True)
-
-        return self.service.files().create(
-            body=metadata,
-            media_body=media,
-            fields='id, name, webViewLink'
-        ).execute()
-
-    def download_file(self, file_id, output_path):
-        """Download a file."""
-        request = self.service.files().get_media(fileId=file_id)
-
-        with io.FileIO(output_path, 'wb') as fh:
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while not done:
-                status, done = downloader.next_chunk()
-
-        return output_path
-
-    def export_google_file(self, file_id, mime_type, output_path):
-        """Export a Google Docs/Sheets/Slides file."""
-        request = self.service.files().export_media(
-            fileId=file_id,
-            mimeType=mime_type
-        )
-
-        with io.FileIO(output_path, 'wb') as fh:
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while not done:
-                status, done = downloader.next_chunk()
-
-        return output_path
-
-    def update_file(self, file_id, name=None, description=None):
-        """Update file metadata."""
-        metadata = {}
-        if name:
-            metadata['name'] = name
-        if description:
-            metadata['description'] = description
-
-        return self.service.files().update(
-            fileId=file_id,
-            body=metadata,
-            fields='id, name, description'
-        ).execute()
-
-    def delete_file(self, file_id, permanent=False):
-        """Delete or trash a file."""
-        if permanent:
-            self.service.files().delete(fileId=file_id).execute()
-        else:
-            self.service.files().update(
-                fileId=file_id,
-                body={'trashed': True}
-            ).execute()
-
-    def restore_file(self, file_id):
-        """Restore a file from trash."""
-        self.service.files().update(
-            fileId=file_id,
-            body={'trashed': False}
-        ).execute()
-
-    # ==================== SEARCH OPERATIONS ====================
-
-    def search(self, query):
-        """Search with custom query."""
-        return self.list_files(query=query)
-
-    def find_by_name(self, name, exact=False):
-        """Find files by name."""
-        if exact:
-            query = f"name = '{name}' and trashed = false"
-        else:
-            query = f"name contains '{name}' and trashed = false"
-        return self.search(query)
-
-    def find_docs(self, name_contains=None):
-        """Find Google Docs."""
-        query = "mimeType = 'application/vnd.google-apps.document' and trashed = false"
-        if name_contains:
-            query = f"name contains '{name_contains}' and " + query
-        return self.search(query)
-
-    def find_sheets(self, name_contains=None):
-        """Find Google Sheets."""
-        query = "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false"
-        if name_contains:
-            query = f"name contains '{name_contains}' and " + query
-        return self.search(query)
-
-    def find_slides(self, name_contains=None):
-        """Find Google Slides."""
-        query = "mimeType = 'application/vnd.google-apps.presentation' and trashed = false"
-        if name_contains:
-            query = f"name contains '{name_contains}' and " + query
-        return self.search(query)
-
-    def find_folders(self, name_contains=None):
-        """Find folders."""
-        query = "mimeType = 'application/vnd.google-apps.folder' and trashed = false"
-        if name_contains:
-            query = f"name contains '{name_contains}' and " + query
-        return self.search(query)
-
-    def find_in_folder(self, folder_id):
-        """Find files in a specific folder."""
-        query = f"'{folder_id}' in parents and trashed = false"
-        return self.search(query)
-
-    def find_shared_with_me(self):
-        """Find files shared with me."""
-        return self.search("sharedWithMe = true and trashed = false")
-
-    def find_recent(self, days=7):
-        """Find recently modified files."""
-        from datetime import datetime, timedelta
-        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat() + 'Z'
-        return self.search(f"modifiedTime > '{cutoff}' and trashed = false")
-
-    def full_text_search(self, text):
-        """Search file contents."""
-        return self.search(f"fullText contains '{text}' and trashed = false")
-
-    # ==================== ORGANIZATION OPERATIONS ====================
-
-    def move_file(self, file_id, new_parent_id):
-        """Move a file to a different folder."""
-        file = self.service.files().get(
-            fileId=file_id,
-            fields='parents'
-        ).execute()
-
-        previous_parents = ','.join(file.get('parents', []))
-
-        return self.service.files().update(
-            fileId=file_id,
-            addParents=new_parent_id,
-            removeParents=previous_parents,
-            fields='id, name, parents'
-        ).execute()
-
-    def copy_file(self, file_id, new_name=None, destination_folder_id=None):
-        """Copy a file."""
-        metadata = {}
-        if new_name:
-            metadata['name'] = new_name
-        if destination_folder_id:
-            metadata['parents'] = [destination_folder_id]
-
-        return self.service.files().copy(
-            fileId=file_id,
-            body=metadata,
-            fields='id, name, webViewLink'
-        ).execute()
-
-    def create_folder_path(self, path, root_id=None):
-        """Create folder path, creating intermediates as needed."""
-        folders = path.strip('/').split('/')
-        parent_id = root_id
-
-        for folder_name in folders:
-            query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
-            if parent_id:
-                query += f" and '{parent_id}' in parents"
-
-            results = self.search(query)
-
-            if results:
-                parent_id = results[0]['id']
-            else:
-                new_folder = self.create_folder(folder_name, parent_id)
-                parent_id = new_folder['id']
-
-        return parent_id
-
-    # ==================== PERMISSIONS OPERATIONS ====================
-
-    def list_permissions(self, file_id):
-        """List all permissions for a file."""
-        return self.service.permissions().list(
-            fileId=file_id,
-            fields='permissions(id, type, role, emailAddress, domain, displayName, deleted)'
-        ).execute().get('permissions', [])
-
-    def share_with_user(self, file_id, email, role='reader', notify=True, message=None):
-        """Share with a specific user."""
-        permission = {
-            'type': 'user',
-            'role': role,
-            'emailAddress': email
-        }
-
-        return self.service.permissions().create(
-            fileId=file_id,
-            body=permission,
-            sendNotificationEmail=notify,
-            emailMessage=message,
-            fields='id, type, role, emailAddress'
-        ).execute()
-
-    def share_with_group(self, file_id, group_email, role='reader'):
-        """Share with a Google Group."""
-        permission = {
-            'type': 'group',
-            'role': role,
-            'emailAddress': group_email
-        }
-
-        return self.service.permissions().create(
-            fileId=file_id,
-            body=permission,
-            fields='id, type, role, emailAddress'
-        ).execute()
-
-    def share_with_domain(self, file_id, domain, role='reader'):
-        """Share with entire domain."""
-        permission = {
-            'type': 'domain',
-            'role': role,
-            'domain': domain
-        }
-
-        return self.service.permissions().create(
-            fileId=file_id,
-            body=permission,
-            fields='id, type, role, domain'
-        ).execute()
-
-    def share_with_anyone(self, file_id, role='reader'):
-        """Share with anyone (public link)."""
-        permission = {
-            'type': 'anyone',
-            'role': role
-        }
-
-        return self.service.permissions().create(
-            fileId=file_id,
-            body=permission,
-            fields='id, type, role'
-        ).execute()
-
-    def update_permission(self, file_id, permission_id, new_role):
-        """Update a permission's role."""
-        return self.service.permissions().update(
-            fileId=file_id,
-            permissionId=permission_id,
-            body={'role': new_role},
-            fields='id, type, role, emailAddress'
-        ).execute()
-
-    def revoke_permission(self, file_id, permission_id):
-        """Revoke a permission."""
-        self.service.permissions().delete(
-            fileId=file_id,
-            permissionId=permission_id
-        ).execute()
-
-    def revoke_access_by_email(self, file_id, email):
-        """Revoke access for a user by email."""
-        permissions = self.list_permissions(file_id)
-
-        for perm in permissions:
-            if perm.get('emailAddress', '').lower() == email.lower():
-                self.revoke_permission(file_id, perm['id'])
-                return True
-        return False
-
-    def get_sharing_summary(self, file_id):
-        """Get a summary of who has access."""
-        permissions = self.list_permissions(file_id)
-
-        summary = {
-            'owner': None,
-            'editors': [],
-            'commenters': [],
-            'viewers': [],
-            'anyone_with_link': False,
-            'domain_access': []
-        }
-
-        for perm in permissions:
-            role = perm.get('role')
-            perm_type = perm.get('type')
-            email = perm.get('emailAddress', '')
-
-            if role == 'owner':
-                summary['owner'] = email
-            elif role == 'writer':
-                if perm_type == 'anyone':
-                    summary['anyone_with_link'] = 'edit'
-                elif perm_type == 'domain':
-                    summary['domain_access'].append({'domain': perm.get('domain'), 'role': 'editor'})
-                else:
-                    summary['editors'].append(email)
-            elif role == 'commenter':
-                summary['commenters'].append(email)
-            elif role == 'reader':
-                if perm_type == 'anyone':
-                    summary['anyone_with_link'] = 'view'
-                elif perm_type == 'domain':
-                    summary['domain_access'].append({'domain': perm.get('domain'), 'role': 'viewer'})
-                else:
-                    summary['viewers'].append(email)
-
-        return summary
-
-
-# Example usage
-if __name__ == '__main__':
-    manager = DriveManager()
-
-    # List recent files
-    print("Recent files:")
-    files = manager.find_recent(days=7)
-    for f in files[:5]:
-        print(f"  - {f['name']} ({f['mimeType']})")
-
-    # Find Google Docs
-    print("\nGoogle Docs:")
-    docs = manager.find_docs()
-    for doc in docs[:5]:
-        print(f"  - {doc['name']}")
-```
-
----
-
-## 7. Node.js Implementation
-
-### 7.1 Environment Setup
 
 ```bash
 # Initialize project
@@ -2760,23 +2718,53 @@ npm init -y
 
 # Install required packages
 npm install googleapis @google-cloud/local-auth
+
+# Install TypeScript and type definitions
+npm install -D typescript @types/node
+
+# Initialize TypeScript configuration
+npx tsc --init
 ```
 
-### 7.2 Authentication Module
+Create `tsconfig.json`:
 
-Create `google-workspace-auth.js`:
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+```
 
-```javascript
+### 6.2 Complete Authentication Module
+
+Create `src/google-workspace-auth.ts`:
+
+```typescript
 /**
- * Google Workspace APIs Authentication Module for Node.js
+ * Google Workspace APIs Authentication Module for TypeScript.
  */
-const fs = require('fs').promises;
-const path = require('path');
-const { authenticate } = require('@google-cloud/local-auth');
-const { google } = require('googleapis');
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { authenticate } from '@google-cloud/local-auth';
+import { google, drive_v3, docs_v1, sheets_v4, slides_v1 } from 'googleapis';
 
-// Comprehensive scopes
-const SCOPES = [
+// Comprehensive scopes for full access
+export const SCOPES = [
   'https://www.googleapis.com/auth/drive',
   'https://www.googleapis.com/auth/documents',
   'https://www.googleapis.com/auth/spreadsheets',
@@ -2786,15 +2774,54 @@ const SCOPES = [
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
+// Type for the auth client - uses ReturnType to handle type compatibility
+// between @google-cloud/local-auth and googleapis
+type GoogleAuthClient = Awaited<ReturnType<typeof authenticate>> | ReturnType<typeof google.auth.fromJSON>;
+
+// Format expected by google.auth.fromJSON
+interface SavedCredentials {
+  type: string;
+  client_id: string;
+  client_secret: string;
+  refresh_token: string;
+}
+
+// Actual format from @google-cloud/local-auth token file
+interface ActualTokenFormat {
+  token?: string;
+  refresh_token: string;
+  token_uri?: string;
+  client_id: string;
+  client_secret: string;
+  scopes?: string[];
+  universe_domain?: string;
+  account?: string;
+  expiry?: string;
+  type?: string;
+}
+
 /**
  * Load saved credentials if they exist.
+ * Handles the token format from @google-cloud/local-auth and converts
+ * it to the format expected by google.auth.fromJSON.
  */
-async function loadSavedCredentials() {
+async function loadSavedCredentials(
+  tokenPath: string
+): Promise<ReturnType<typeof google.auth.fromJSON> | null> {
   try {
-    const content = await fs.readFile(TOKEN_PATH);
-    const credentials = JSON.parse(content);
+    const content = await fs.readFile(tokenPath, 'utf-8');
+    const rawCredentials: ActualTokenFormat = JSON.parse(content);
+
+    // Convert to format expected by google.auth.fromJSON
+    const credentials: SavedCredentials = {
+      type: rawCredentials.type || 'authorized_user',
+      client_id: rawCredentials.client_id,
+      client_secret: rawCredentials.client_secret,
+      refresh_token: rawCredentials.refresh_token,
+    };
+
     return google.auth.fromJSON(credentials);
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -2802,141 +2829,210 @@ async function loadSavedCredentials() {
 /**
  * Save credentials to file.
  */
-async function saveCredentials(client) {
-  const content = await fs.readFile(CREDENTIALS_PATH);
+async function saveCredentials(
+  client: GoogleAuthClient,
+  credentialsPath: string,
+  tokenPath: string
+): Promise<void> {
+  const content = await fs.readFile(credentialsPath, 'utf-8');
   const keys = JSON.parse(content);
   const key = keys.installed || keys.web;
-  const payload = JSON.stringify({
+  const payload: SavedCredentials = {
     type: 'authorized_user',
     client_id: key.client_id,
     client_secret: key.client_secret,
-    refresh_token: client.credentials.refresh_token,
-  });
-  await fs.writeFile(TOKEN_PATH, payload);
+    refresh_token: (client as any).credentials.refresh_token!,
+  };
+  await fs.writeFile(tokenPath, JSON.stringify(payload));
 }
 
 /**
- * Get authenticated credentials.
+ * Get or refresh OAuth credentials.
+ *
+ * @param credentialsPath - Path to OAuth credentials JSON
+ * @param tokenPath - Path to store/retrieve access tokens
+ * @param scopes - List of OAuth scopes (defaults to SCOPES)
+ * @returns Authenticated credentials object
  */
-async function getCredentials() {
-  let client = await loadSavedCredentials();
-  if (client) {
-    return client;
+export async function getCredentials(
+  credentialsPath: string = CREDENTIALS_PATH,
+  tokenPath: string = TOKEN_PATH,
+  scopes: string[] = SCOPES
+): Promise<GoogleAuthClient> {
+  const savedClient = await loadSavedCredentials(tokenPath);
+  if (savedClient) {
+    return savedClient;
   }
-  client = await authenticate({
-    scopes: SCOPES,
-    keyfilePath: CREDENTIALS_PATH,
+
+  const client = await authenticate({
+    scopes,
+    keyfilePath: credentialsPath,
   });
+
   if (client.credentials) {
-    await saveCredentials(client);
+    await saveCredentials(client, credentialsPath, tokenPath);
   }
+
   return client;
 }
 
 /**
- * Get Drive service.
+ * Get Google Drive API service instance.
  */
-async function getDriveService() {
-  const auth = await getCredentials();
-  return google.drive({ version: 'v3', auth });
+export async function getDriveService(
+  credentialsPath: string = CREDENTIALS_PATH,
+  tokenPath: string = TOKEN_PATH
+): Promise<drive_v3.Drive> {
+  const auth = await getCredentials(credentialsPath, tokenPath);
+  return google.drive({ version: 'v3', auth: auth as any });
 }
 
 /**
- * Get Docs service.
+ * Get Google Docs API service instance.
  */
-async function getDocsService() {
-  const auth = await getCredentials();
-  return google.docs({ version: 'v1', auth });
+export async function getDocsService(
+  credentialsPath: string = CREDENTIALS_PATH,
+  tokenPath: string = TOKEN_PATH
+): Promise<docs_v1.Docs> {
+  const auth = await getCredentials(credentialsPath, tokenPath);
+  return google.docs({ version: 'v1', auth: auth as any });
 }
 
 /**
- * Get Sheets service.
+ * Get Google Sheets API service instance.
  */
-async function getSheetsService() {
-  const auth = await getCredentials();
-  return google.sheets({ version: 'v4', auth });
+export async function getSheetsService(
+  credentialsPath: string = CREDENTIALS_PATH,
+  tokenPath: string = TOKEN_PATH
+): Promise<sheets_v4.Sheets> {
+  const auth = await getCredentials(credentialsPath, tokenPath);
+  return google.sheets({ version: 'v4', auth: auth as any });
 }
 
 /**
- * Get Slides service.
+ * Get Google Slides API service instance.
  */
-async function getSlidesService() {
-  const auth = await getCredentials();
-  return google.slides({ version: 'v1', auth });
+export async function getSlidesService(
+  credentialsPath: string = CREDENTIALS_PATH,
+  tokenPath: string = TOKEN_PATH
+): Promise<slides_v1.Slides> {
+  const auth = await getCredentials(credentialsPath, tokenPath);
+  return google.slides({ version: 'v1', auth: auth as any });
+}
+
+export interface AllServices {
+  drive: drive_v3.Drive;
+  docs: docs_v1.Docs;
+  sheets: sheets_v4.Sheets;
+  slides: slides_v1.Slides;
 }
 
 /**
- * Get all services.
+ * Get all Google Workspace API service instances.
+ *
+ * @returns Object with 'drive', 'docs', 'sheets', 'slides' services
  */
-async function getAllServices() {
-  const auth = await getCredentials();
+export async function getAllServices(
+  credentialsPath: string = CREDENTIALS_PATH,
+  tokenPath: string = TOKEN_PATH
+): Promise<AllServices> {
+  const auth = await getCredentials(credentialsPath, tokenPath);
+
   return {
-    drive: google.drive({ version: 'v3', auth }),
-    docs: google.docs({ version: 'v1', auth }),
-    sheets: google.sheets({ version: 'v4', auth }),
-    slides: google.slides({ version: 'v1', auth }),
+    drive: google.drive({ version: 'v3', auth: auth as any }),
+    docs: google.docs({ version: 'v1', auth: auth as any }),
+    sheets: google.sheets({ version: 'v4', auth: auth as any }),
+    slides: google.slides({ version: 'v1', auth: auth as any }),
   };
 }
-
-module.exports = {
-  getCredentials,
-  getDriveService,
-  getDocsService,
-  getSheetsService,
-  getSlidesService,
-  getAllServices,
-  SCOPES,
-};
 ```
 
-### 7.3 Drive Manager Module
+### 6.3 Complete Drive Manager Module
 
-Create `drive-manager.js`:
+Create `src/drive-manager.ts`:
 
-```javascript
+```typescript
 /**
- * Google Drive Manager Module for Node.js
+ * Google Drive Management Module - Complete TypeScript Implementation.
  */
-const { getDriveService } = require('./google-workspace-auth');
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'fs';
+import * as path from 'path';
+import { drive_v3 } from 'googleapis';
+import { getDriveService } from './google-workspace-auth';
 
-class DriveManager {
-  constructor() {
-    this.service = null;
+export interface SharingSummary {
+  owner: string | null;
+  editors: string[];
+  commenters: string[];
+  viewers: string[];
+  anyoneWithLink: boolean | string;
+  domainAccess: Array<{ domain: string; role: string }>;
+}
+
+export class DriveManager {
+  private service: drive_v3.Drive | null = null;
+
+  /**
+   * Initialize with credentials.
+   */
+  async init(
+    credentialsPath: string = 'credentials.json',
+    tokenPath: string = 'token.json'
+  ): Promise<this> {
+    this.service = await getDriveService(credentialsPath, tokenPath);
+    return this;
   }
 
-  async init() {
-    this.service = await getDriveService();
-    return this;
+  private getService(): drive_v3.Drive {
+    if (!this.service) {
+      throw new Error('DriveManager not initialized. Call init() first.');
+    }
+    return this.service;
   }
 
   // ==================== FILE OPERATIONS ====================
 
-  async listFiles(query = null, pageSize = 100) {
-    const files = [];
-    let pageToken = null;
+  /**
+   * List files with optional query filter.
+   */
+  async listFiles(
+    query?: string,
+    pageSize: number = 100,
+    orderBy: string = 'modifiedTime desc'
+  ): Promise<drive_v3.Schema$File[]> {
+    const service = this.getService();
+    const files: drive_v3.Schema$File[] = [];
+    let pageToken: string | undefined;
 
-    do {
-      const params = {
+    while (true) {
+      const params: drive_v3.Params$Resource$Files$List = {
         pageSize: Math.min(pageSize, 1000),
-        fields: 'nextPageToken, files(id, name, mimeType, parents, createdTime, modifiedTime, owners, webViewLink)',
+        fields: 'nextPageToken, files(id, name, mimeType, parents, createdTime, modifiedTime, owners, size, webViewLink)',
+        orderBy,
         supportsAllDrives: true,
       };
 
       if (query) params.q = query;
       if (pageToken) params.pageToken = pageToken;
 
-      const response = await this.service.files.list(params);
+      const response = await service.files.list(params);
       files.push(...(response.data.files || []));
-      pageToken = response.data.nextPageToken;
-    } while (pageToken && files.length < pageSize);
+
+      pageToken = response.data.nextPageToken ?? undefined;
+      if (!pageToken || files.length >= pageSize) {
+        break;
+      }
+    }
 
     return files.slice(0, pageSize);
   }
 
-  async getFile(fileId) {
-    const response = await this.service.files.get({
+  /**
+   * Get file metadata.
+   */
+  async getFile(fileId: string): Promise<drive_v3.Schema$File> {
+    const service = this.getService();
+    const response = await service.files.get({
       fileId,
       fields: '*',
       supportsAllDrives: true,
@@ -2944,160 +3040,476 @@ class DriveManager {
     return response.data;
   }
 
-  async createFolder(name, parentId = null) {
-    const metadata = {
+  /**
+   * Create a folder.
+   */
+  async createFolder(
+    name: string,
+    parentId?: string
+  ): Promise<drive_v3.Schema$File> {
+    const service = this.getService();
+    const metadata: drive_v3.Schema$File = {
       name,
       mimeType: 'application/vnd.google-apps.folder',
     };
-    if (parentId) metadata.parents = [parentId];
+    if (parentId) {
+      metadata.parents = [parentId];
+    }
 
-    const response = await this.service.files.create({
+    const response = await service.files.create({
       requestBody: metadata,
       fields: 'id, name, webViewLink',
     });
     return response.data;
   }
 
-  async deleteFile(fileId, permanent = false) {
+  /**
+   * Upload a file.
+   */
+  async uploadFile(
+    filePath: string,
+    name?: string,
+    parentId?: string,
+    mimeType?: string
+  ): Promise<drive_v3.Schema$File> {
+    const service = this.getService();
+    const fileName = name ?? path.basename(filePath);
+
+    const metadata: drive_v3.Schema$File = { name: fileName };
+    if (parentId) {
+      metadata.parents = [parentId];
+    }
+
+    const media = {
+      mimeType,
+      body: fs.createReadStream(filePath),
+    };
+
+    const response = await service.files.create({
+      requestBody: metadata,
+      media,
+      fields: 'id, name, webViewLink',
+    });
+    return response.data;
+  }
+
+  /**
+   * Download a file.
+   */
+  async downloadFile(fileId: string, outputPath: string): Promise<string> {
+    const service = this.getService();
+    const response = await service.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'stream' }
+    );
+
+    return new Promise((resolve, reject) => {
+      const dest = fs.createWriteStream(outputPath);
+      (response.data as NodeJS.ReadableStream)
+        .pipe(dest)
+        .on('finish', () => resolve(outputPath))
+        .on('error', reject);
+    });
+  }
+
+  /**
+   * Export a Google Docs/Sheets/Slides file.
+   */
+  async exportGoogleFile(
+    fileId: string,
+    mimeType: string,
+    outputPath: string
+  ): Promise<string> {
+    const service = this.getService();
+    const response = await service.files.export(
+      { fileId, mimeType },
+      { responseType: 'stream' }
+    );
+
+    return new Promise((resolve, reject) => {
+      const dest = fs.createWriteStream(outputPath);
+      (response.data as NodeJS.ReadableStream)
+        .pipe(dest)
+        .on('finish', () => resolve(outputPath))
+        .on('error', reject);
+    });
+  }
+
+  /**
+   * Update file metadata.
+   */
+  async updateFile(
+    fileId: string,
+    name?: string,
+    description?: string
+  ): Promise<drive_v3.Schema$File> {
+    const service = this.getService();
+    const metadata: drive_v3.Schema$File = {};
+    if (name) metadata.name = name;
+    if (description) metadata.description = description;
+
+    const response = await service.files.update({
+      fileId,
+      requestBody: metadata,
+      fields: 'id, name, description',
+    });
+    return response.data;
+  }
+
+  /**
+   * Delete or trash a file.
+   */
+  async deleteFile(fileId: string, permanent: boolean = false): Promise<void> {
+    const service = this.getService();
     if (permanent) {
-      await this.service.files.delete({ fileId });
+      await service.files.delete({ fileId });
     } else {
-      await this.service.files.update({
+      await service.files.update({
         fileId,
         requestBody: { trashed: true },
       });
     }
   }
 
+  /**
+   * Restore a file from trash.
+   */
+  async restoreFile(fileId: string): Promise<void> {
+    const service = this.getService();
+    await service.files.update({
+      fileId,
+      requestBody: { trashed: false },
+    });
+  }
+
   // ==================== SEARCH OPERATIONS ====================
 
-  async search(query) {
+  /**
+   * Search with custom query.
+   */
+  async search(query: string): Promise<drive_v3.Schema$File[]> {
     return this.listFiles(query);
   }
 
-  async findByName(nameContains) {
-    return this.search(`name contains '${nameContains}' and trashed = false`);
+  /**
+   * Find files by name.
+   */
+  async findByName(
+    name: string,
+    exact: boolean = false
+  ): Promise<drive_v3.Schema$File[]> {
+    const query = exact
+      ? `name = '${name}' and trashed = false`
+      : `name contains '${name}' and trashed = false`;
+    return this.search(query);
   }
 
-  async findDocs(nameContains = null) {
+  /**
+   * Find Google Docs.
+   */
+  async findDocs(nameContains?: string): Promise<drive_v3.Schema$File[]> {
     let query = "mimeType = 'application/vnd.google-apps.document' and trashed = false";
-    if (nameContains) query = `name contains '${nameContains}' and ${query}`;
+    if (nameContains) {
+      query = `name contains '${nameContains}' and ${query}`;
+    }
     return this.search(query);
   }
 
-  async findSheets(nameContains = null) {
+  /**
+   * Find Google Sheets.
+   */
+  async findSheets(nameContains?: string): Promise<drive_v3.Schema$File[]> {
     let query = "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false";
-    if (nameContains) query = `name contains '${nameContains}' and ${query}`;
+    if (nameContains) {
+      query = `name contains '${nameContains}' and ${query}`;
+    }
     return this.search(query);
   }
 
-  async findSlides(nameContains = null) {
+  /**
+   * Find Google Slides.
+   */
+  async findSlides(nameContains?: string): Promise<drive_v3.Schema$File[]> {
     let query = "mimeType = 'application/vnd.google-apps.presentation' and trashed = false";
-    if (nameContains) query = `name contains '${nameContains}' and ${query}`;
+    if (nameContains) {
+      query = `name contains '${nameContains}' and ${query}`;
+    }
     return this.search(query);
   }
 
-  async findInFolder(folderId) {
-    return this.search(`'${folderId}' in parents and trashed = false`);
+  /**
+   * Find folders.
+   */
+  async findFolders(nameContains?: string): Promise<drive_v3.Schema$File[]> {
+    let query = "mimeType = 'application/vnd.google-apps.folder' and trashed = false";
+    if (nameContains) {
+      query = `name contains '${nameContains}' and ${query}`;
+    }
+    return this.search(query);
   }
 
-  async fullTextSearch(text) {
+  /**
+   * Find files in a specific folder.
+   */
+  async findInFolder(folderId: string): Promise<drive_v3.Schema$File[]> {
+    const query = `'${folderId}' in parents and trashed = false`;
+    return this.search(query);
+  }
+
+  /**
+   * Find files shared with me.
+   */
+  async findSharedWithMe(): Promise<drive_v3.Schema$File[]> {
+    return this.search("sharedWithMe = true and trashed = false");
+  }
+
+  /**
+   * Find recently modified files.
+   */
+  async findRecent(days: number = 7): Promise<drive_v3.Schema$File[]> {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    return this.search(`modifiedTime > '${cutoff}' and trashed = false`);
+  }
+
+  /**
+   * Search file contents.
+   */
+  async fullTextSearch(text: string): Promise<drive_v3.Schema$File[]> {
     return this.search(`fullText contains '${text}' and trashed = false`);
   }
 
-  // ==================== ORGANIZATION ====================
+  // ==================== ORGANIZATION OPERATIONS ====================
 
-  async moveFile(fileId, newParentId) {
-    const file = await this.service.files.get({
+  /**
+   * Move a file to a different folder.
+   */
+  async moveFile(
+    fileId: string,
+    newParentId: string
+  ): Promise<drive_v3.Schema$File> {
+    const service = this.getService();
+    const file = await service.files.get({
       fileId,
       fields: 'parents',
     });
 
     const previousParents = (file.data.parents || []).join(',');
 
-    const response = await this.service.files.update({
+    const response = await service.files.update({
       fileId,
       addParents: newParentId,
       removeParents: previousParents,
       fields: 'id, name, parents',
     });
-
     return response.data;
   }
 
-  async copyFile(fileId, newName = null, destinationFolderId = null) {
-    const metadata = {};
+  /**
+   * Copy a file.
+   */
+  async copyFile(
+    fileId: string,
+    newName?: string,
+    destinationFolderId?: string
+  ): Promise<drive_v3.Schema$File> {
+    const service = this.getService();
+    const metadata: drive_v3.Schema$File = {};
     if (newName) metadata.name = newName;
     if (destinationFolderId) metadata.parents = [destinationFolderId];
 
-    const response = await this.service.files.copy({
+    const response = await service.files.copy({
       fileId,
       requestBody: metadata,
       fields: 'id, name, webViewLink',
     });
-
     return response.data;
   }
 
-  // ==================== PERMISSIONS ====================
+  /**
+   * Create folder path, creating intermediates as needed.
+   */
+  async createFolderPath(folderPath: string, rootId?: string): Promise<string> {
+    const folders = folderPath.replace(/^\/|\/$/g, '').split('/');
+    let parentId = rootId;
 
-  async listPermissions(fileId) {
-    const response = await this.service.permissions.list({
+    for (const folderName of folders) {
+      let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+      if (parentId) {
+        query += ` and '${parentId}' in parents`;
+      }
+
+      const results = await this.search(query);
+
+      if (results.length > 0) {
+        parentId = results[0].id!;
+      } else {
+        const newFolder = await this.createFolder(folderName, parentId);
+        parentId = newFolder.id!;
+      }
+    }
+
+    return parentId!;
+  }
+
+  // ==================== PERMISSIONS OPERATIONS ====================
+
+  /**
+   * List all permissions for a file.
+   */
+  async listPermissions(fileId: string): Promise<drive_v3.Schema$Permission[]> {
+    const service = this.getService();
+    const response = await service.permissions.list({
       fileId,
       fields: 'permissions(id, type, role, emailAddress, domain, displayName, deleted)',
     });
     return response.data.permissions || [];
   }
 
-  async shareWithUser(fileId, email, role = 'reader', notify = true) {
-    const response = await this.service.permissions.create({
+  /**
+   * Share with a specific user.
+   */
+  async shareWithUser(
+    fileId: string,
+    email: string,
+    role: 'reader' | 'commenter' | 'writer' = 'reader',
+    notify: boolean = true,
+    message?: string
+  ): Promise<drive_v3.Schema$Permission> {
+    const service = this.getService();
+    const permission: drive_v3.Schema$Permission = {
+      type: 'user',
+      role,
+      emailAddress: email,
+    };
+
+    const response = await service.permissions.create({
       fileId,
+      requestBody: permission,
       sendNotificationEmail: notify,
-      requestBody: {
-        type: 'user',
-        role,
-        emailAddress: email,
-      },
+      emailMessage: message,
       fields: 'id, type, role, emailAddress',
     });
     return response.data;
   }
 
-  async shareWithAnyone(fileId, role = 'reader') {
-    const response = await this.service.permissions.create({
+  /**
+   * Share with a Google Group.
+   */
+  async shareWithGroup(
+    fileId: string,
+    groupEmail: string,
+    role: 'reader' | 'commenter' | 'writer' = 'reader'
+  ): Promise<drive_v3.Schema$Permission> {
+    const service = this.getService();
+    const permission: drive_v3.Schema$Permission = {
+      type: 'group',
+      role,
+      emailAddress: groupEmail,
+    };
+
+    const response = await service.permissions.create({
       fileId,
-      requestBody: {
-        type: 'anyone',
-        role,
-      },
+      requestBody: permission,
+      fields: 'id, type, role, emailAddress',
+    });
+    return response.data;
+  }
+
+  /**
+   * Share with entire domain.
+   */
+  async shareWithDomain(
+    fileId: string,
+    domain: string,
+    role: 'reader' | 'commenter' | 'writer' = 'reader'
+  ): Promise<drive_v3.Schema$Permission> {
+    const service = this.getService();
+    const permission: drive_v3.Schema$Permission = {
+      type: 'domain',
+      role,
+      domain,
+    };
+
+    const response = await service.permissions.create({
+      fileId,
+      requestBody: permission,
+      fields: 'id, type, role, domain',
+    });
+    return response.data;
+  }
+
+  /**
+   * Share with anyone (public link).
+   */
+  async shareWithAnyone(
+    fileId: string,
+    role: 'reader' | 'commenter' = 'reader'
+  ): Promise<drive_v3.Schema$Permission> {
+    const service = this.getService();
+    const permission: drive_v3.Schema$Permission = {
+      type: 'anyone',
+      role,
+    };
+
+    const response = await service.permissions.create({
+      fileId,
+      requestBody: permission,
       fields: 'id, type, role',
     });
     return response.data;
   }
 
-  async revokePermission(fileId, permissionId) {
-    await this.service.permissions.delete({
+  /**
+   * Update a permission's role.
+   */
+  async updatePermission(
+    fileId: string,
+    permissionId: string,
+    newRole: 'reader' | 'commenter' | 'writer'
+  ): Promise<drive_v3.Schema$Permission> {
+    const service = this.getService();
+    const response = await service.permissions.update({
+      fileId,
+      permissionId,
+      requestBody: { role: newRole },
+      fields: 'id, type, role, emailAddress',
+    });
+    return response.data;
+  }
+
+  /**
+   * Revoke a permission.
+   */
+  async revokePermission(fileId: string, permissionId: string): Promise<void> {
+    const service = this.getService();
+    await service.permissions.delete({
       fileId,
       permissionId,
     });
   }
 
-  async revokeAccessByEmail(fileId, email) {
+  /**
+   * Revoke access for a user by email.
+   */
+  async revokeAccessByEmail(fileId: string, email: string): Promise<boolean> {
     const permissions = await this.listPermissions(fileId);
 
     for (const perm of permissions) {
       if ((perm.emailAddress || '').toLowerCase() === email.toLowerCase()) {
-        await this.revokePermission(fileId, perm.id);
+        await this.revokePermission(fileId, perm.id!);
         return true;
       }
     }
     return false;
   }
 
-  async getSharingSummary(fileId) {
+  /**
+   * Get a summary of who has access.
+   */
+  async getSharingSummary(fileId: string): Promise<SharingSummary> {
     const permissions = await this.listPermissions(fileId);
 
-    const summary = {
+    const summary: SharingSummary = {
       owner: null,
       editors: [],
       commenters: [],
@@ -3107,20 +3519,30 @@ class DriveManager {
     };
 
     for (const perm of permissions) {
-      const { role, type, emailAddress, domain } = perm;
+      const role = perm.role;
+      const permType = perm.type;
+      const email = perm.emailAddress || '';
 
       if (role === 'owner') {
-        summary.owner = emailAddress;
+        summary.owner = email;
       } else if (role === 'writer') {
-        if (type === 'anyone') summary.anyoneWithLink = 'edit';
-        else if (type === 'domain') summary.domainAccess.push({ domain, role: 'editor' });
-        else summary.editors.push(emailAddress);
+        if (permType === 'anyone') {
+          summary.anyoneWithLink = 'edit';
+        } else if (permType === 'domain') {
+          summary.domainAccess.push({ domain: perm.domain || '', role: 'editor' });
+        } else {
+          summary.editors.push(email);
+        }
       } else if (role === 'commenter') {
-        summary.commenters.push(emailAddress);
+        summary.commenters.push(email);
       } else if (role === 'reader') {
-        if (type === 'anyone') summary.anyoneWithLink = 'view';
-        else if (type === 'domain') summary.domainAccess.push({ domain, role: 'viewer' });
-        else summary.viewers.push(emailAddress);
+        if (permType === 'anyone') {
+          summary.anyoneWithLink = 'view';
+        } else if (permType === 'domain') {
+          summary.domainAccess.push({ domain: perm.domain || '', role: 'viewer' });
+        } else {
+          summary.viewers.push(email);
+        }
       }
     }
 
@@ -3128,27 +3550,36 @@ class DriveManager {
   }
 }
 
-module.exports = { DriveManager };
-
 // Example usage
-if (require.main === module) {
-  (async () => {
-    const manager = await new DriveManager().init();
+async function main(): Promise<void> {
+  const manager = await new DriveManager().init();
 
-    console.log('Recent Google Docs:');
-    const docs = await manager.findDocs();
-    docs.slice(0, 5).forEach((doc) => {
-      console.log(`  - ${doc.name}`);
-    });
-  })();
+  // List recent files
+  console.log('Recent files:');
+  const files = await manager.findRecent(7);
+  for (const f of files.slice(0, 5)) {
+    console.log(`  - ${f.name} (${f.mimeType})`);
+  }
+
+  // Find Google Docs
+  console.log('\nGoogle Docs:');
+  const docs = await manager.findDocs();
+  for (const doc of docs.slice(0, 5)) {
+    console.log(`  - ${doc.name}`);
+  }
+}
+
+// Run if executed directly
+if (require.main === module) {
+  main().catch(console.error);
 }
 ```
 
 ---
 
-## 8. Error Handling and Best Practices
+## 7. Error Handling and Best Practices
 
-### 8.1 Common Error Codes
+### 7.1 Common Error Codes
 
 | Error Code | Description | Solution |
 |------------|-------------|----------|
@@ -3159,7 +3590,7 @@ if (require.main === module) {
 | 429 | Rate Limit | Implement exponential backoff |
 | 500 | Server Error | Retry with backoff |
 
-### 8.2 Rate Limits
+### 7.2 Rate Limits
 
 | API | Quota |
 |-----|-------|
@@ -3168,30 +3599,55 @@ if (require.main === module) {
 | Sheets API | 500 requests/100 seconds/project |
 | Slides API | 500 requests/100 seconds/project |
 
-### 8.3 Error Handling Pattern
+### 7.3 Error Handling Pattern
 
-```python
-# Python - Retry with exponential backoff
-from googleapiclient.errors import HttpError
-import time
-import random
+```typescript
+// TypeScript - Retry with exponential backoff
+import { GaxiosError } from 'gaxios';
 
-def execute_with_retry(request, max_retries=5):
-    """Execute API request with exponential backoff."""
-    for attempt in range(max_retries):
-        try:
-            return request.execute()
-        except HttpError as error:
-            if error.resp.status in [429, 500, 502, 503, 504]:
-                wait_time = (2 ** attempt) + random.uniform(0, 1)
-                print(f"Retrying in {wait_time:.2f} seconds...")
-                time.sleep(wait_time)
-            else:
-                raise
-    raise Exception(f"Failed after {max_retries} retries")
+interface RetryableRequest<T> {
+  (): Promise<T>;
+}
+
+/**
+ * Execute API request with exponential backoff.
+ */
+async function executeWithRetry<T>(
+  request: RetryableRequest<T>,
+  maxRetries: number = 5
+): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await request();
+    } catch (error) {
+      if (error instanceof GaxiosError) {
+        const status = error.response?.status;
+        if (status && [429, 500, 502, 503, 504].includes(status)) {
+          const waitTime = Math.pow(2, attempt) + Math.random();
+          console.log(`Retrying in ${waitTime.toFixed(2)} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+          continue;
+        }
+      }
+      throw error;
+    }
+  }
+  throw new Error(`Failed after ${maxRetries} retries`);
+}
+
+// Usage example
+async function safeListFiles(service: drive_v3.Drive): Promise<drive_v3.Schema$File[]> {
+  return executeWithRetry(async () => {
+    const response = await service.files.list({
+      pageSize: 100,
+      fields: 'files(id, name)',
+    });
+    return response.data.files || [];
+  });
+}
 ```
 
-### 8.4 Best Practices
+### 7.4 Best Practices
 
 1. **Use batch requests** - Combine multiple operations when possible
 2. **Request only needed fields** - Use `fields` parameter to reduce response size
@@ -3202,7 +3658,7 @@ def execute_with_retry(request, max_retries=5):
 
 ---
 
-## 9. Quick Reference
+## 8. Quick Reference
 
 ### API Endpoints
 
@@ -3266,20 +3722,19 @@ sharedWithMe = true and trashed = false
 ### Google Docs API
 - [Docs API Overview](https://developers.google.com/workspace/docs/api/how-tos/overview)
 - [Docs API Reference](https://developers.google.com/workspace/docs/api/reference/rest)
-- [Python Quickstart](https://developers.google.com/workspace/docs/api/quickstart/python)
+- [Node.js Quickstart](https://developers.google.com/workspace/docs/api/quickstart/nodejs)
 
 ### Google Sheets API
 - [Sheets API Overview](https://developers.google.com/workspace/sheets/api/guides/concepts)
 - [Sheets API Reference](https://developers.google.com/workspace/sheets/api/reference/rest)
-- [Python Quickstart](https://developers.google.com/workspace/sheets/api/quickstart/python)
-- [gspread Library](https://docs.gspread.org/)
+- [Node.js Quickstart](https://developers.google.com/workspace/sheets/api/quickstart/nodejs)
 
 ### Google Slides API
 - [Slides API Overview](https://developers.google.com/workspace/slides/api/guides/overview)
 - [Slides API Reference](https://developers.google.com/workspace/slides/api/reference/rest)
-- [Python Quickstart](https://developers.google.com/workspace/slides/api/quickstart/python)
+- [Node.js Quickstart](https://developers.google.com/workspace/slides/api/quickstart/nodejs)
 
 ### Client Libraries
-- [Google API Python Client](https://github.com/googleapis/google-api-python-client)
 - [Google API Node.js Client](https://github.com/googleapis/google-api-nodejs-client)
-- [Python Client Library Docs](https://googleapis.github.io/google-api-python-client/docs/)
+- [googleapis npm package](https://www.npmjs.com/package/googleapis)
+- [TypeScript Support Documentation](https://github.com/googleapis/google-api-nodejs-client#typescript)

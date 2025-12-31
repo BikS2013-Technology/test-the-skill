@@ -1,0 +1,2542 @@
+[
+  {
+    "start": "0.4",
+    "dur": "5.12",
+    "text": "Sub agents are one of the most powerful"
+  },
+  {
+    "start": "2.72",
+    "dur": "4.72",
+    "text": "capabilities inside of Claw Code. And"
+  },
+  {
+    "start": "5.52",
+    "dur": "4.32",
+    "text": "while a lot of people, a lot of creators"
+  },
+  {
+    "start": "7.44",
+    "dur": "5.36",
+    "text": "talk about them or cover them, nobody is"
+  },
+  {
+    "start": "9.84",
+    "dur": "5.04",
+    "text": "showing you how to build sub agents for"
+  },
+  {
+    "start": "12.8",
+    "dur": "4",
+    "text": "writing operations or content creation"
+  },
+  {
+    "start": "14.88",
+    "dur": "3.44",
+    "text": "inside of Cloud Code. So that's what I'm"
+  },
+  {
+    "start": "16.8",
+    "dur": "3.12",
+    "text": "going to do today. I'm going to show you"
+  },
+  {
+    "start": "18.32",
+    "dur": "3.68",
+    "text": "exactly how you can build a writing"
+  },
+  {
+    "start": "19.92",
+    "dur": "3.92",
+    "text": "agent, how you can give it access to"
+  },
+  {
+    "start": "22",
+    "dur": "4.16",
+    "text": "Claude skills to use, and how you can"
+  },
+  {
+    "start": "23.84",
+    "dur": "4.88",
+    "text": "implement all of this in a larger"
+  },
+  {
+    "start": "26.16",
+    "dur": "3.84",
+    "text": "writing system inside of Claude Code."
+  },
+  {
+    "start": "28.72",
+    "dur": "3.04",
+    "text": "Make sure to watch to the end of the"
+  },
+  {
+    "start": "30",
+    "dur": "3.76",
+    "text": "video if you want to use all the exact"
+  },
+  {
+    "start": "31.76",
+    "dur": "3.44",
+    "text": "resources I show you in this video. I'll"
+  },
+  {
+    "start": "33.76",
+    "dur": "3.6",
+    "text": "tell you exactly how you can get them"
+  },
+  {
+    "start": "35.2",
+    "dur": "4.56",
+    "text": "and put them into your own Claude code"
+  },
+  {
+    "start": "37.36",
+    "dur": "4.879",
+    "text": "system. Before we get started into it,"
+  },
+  {
+    "start": "39.76",
+    "dur": "4.16",
+    "text": "let's first just define what sub agents"
+  },
+  {
+    "start": "42.239",
+    "dur": "4.32",
+    "text": "are. And to do that, we'll just look at"
+  },
+  {
+    "start": "43.92",
+    "dur": "5.04",
+    "text": "Claude Codes documentation because they"
+  },
+  {
+    "start": "46.559",
+    "dur": "4.961",
+    "text": "can define it better than any of us can."
+  },
+  {
+    "start": "48.96",
+    "dur": "5.2",
+    "text": "These are specialized AI sub aents in"
+  },
+  {
+    "start": "51.52",
+    "dur": "5.199",
+    "text": "Cloud Code for task specific workflows"
+  },
+  {
+    "start": "54.16",
+    "dur": "5.039",
+    "text": "and improved context management. custom"
+  },
+  {
+    "start": "56.719",
+    "dur": "4.721",
+    "text": "sub aents in cloud code or special AI"
+  },
+  {
+    "start": "59.199",
+    "dur": "4.561",
+    "text": "assistance that can be invoked to handle"
+  },
+  {
+    "start": "61.44",
+    "dur": "3.84",
+    "text": "specific types of tasks. Now also"
+  },
+  {
+    "start": "63.76",
+    "dur": "3.6",
+    "text": "important to note you don't even have to"
+  },
+  {
+    "start": "65.28",
+    "dur": "5.12",
+    "text": "manually invoke these. If you have"
+  },
+  {
+    "start": "67.36",
+    "dur": "4.88",
+    "text": "effective claude.md system prompts, if"
+  },
+  {
+    "start": "70.4",
+    "dur": "3.759",
+    "text": "you have effective sub aent system"
+  },
+  {
+    "start": "72.24",
+    "dur": "4.4",
+    "text": "prompts, then it will autonomously"
+  },
+  {
+    "start": "74.159",
+    "dur": "4.96",
+    "text": "invoke the agents uh you know when it"
+  },
+  {
+    "start": "76.64",
+    "dur": "4",
+    "text": "should. So that is another uh important"
+  },
+  {
+    "start": "79.119",
+    "dur": "3.521",
+    "text": "thing to keep in mind. You can basically"
+  },
+  {
+    "start": "80.64",
+    "dur": "4",
+    "text": "build out teams of these sub aents"
+  },
+  {
+    "start": "82.64",
+    "dur": "3.6",
+    "text": "inside of your cloud code writing system"
+  },
+  {
+    "start": "84.64",
+    "dur": "3.76",
+    "text": "and just run all these different writing"
+  },
+  {
+    "start": "86.24",
+    "dur": "4.64",
+    "text": "operations, you know, with spinning up"
+  },
+  {
+    "start": "88.4",
+    "dur": "4.64",
+    "text": "sub aents simultaneously, invoking them"
+  },
+  {
+    "start": "90.88",
+    "dur": "3.68",
+    "text": "autonomously. So, there are a couple key"
+  },
+  {
+    "start": "93.04",
+    "dur": "3.52",
+    "text": "benefits, you know, that we can run"
+  },
+  {
+    "start": "94.56",
+    "dur": "4.48",
+    "text": "through really quick of sub agents. The"
+  },
+  {
+    "start": "96.56",
+    "dur": "4.64",
+    "text": "first is context preservation. Each"
+  },
+  {
+    "start": "99.04",
+    "dur": "3.28",
+    "text": "operates in its own context. This means"
+  },
+  {
+    "start": "101.2",
+    "dur": "3.279",
+    "text": "it doesn't pollute the main"
+  },
+  {
+    "start": "102.32",
+    "dur": "4.159",
+    "text": "conversation. It stays inside of that"
+  },
+  {
+    "start": "104.479",
+    "dur": "4.081",
+    "text": "context. It also allows you to give"
+  },
+  {
+    "start": "106.479",
+    "dur": "4.241",
+    "text": "specialized expertise to these sub"
+  },
+  {
+    "start": "108.56",
+    "dur": "4.96",
+    "text": "agents so they can be fine-tuned with"
+  },
+  {
+    "start": "110.72",
+    "dur": "4.64",
+    "text": "detailed instructions. Now, people"
+  },
+  {
+    "start": "113.52",
+    "dur": "3.279",
+    "text": "create agents, you know, in various"
+  },
+  {
+    "start": "115.36",
+    "dur": "2.56",
+    "text": "different ways. You know, a lot of what"
+  },
+  {
+    "start": "116.799",
+    "dur": "3.121",
+    "text": "you're going to see out there is for"
+  },
+  {
+    "start": "117.92",
+    "dur": "4",
+    "text": "development and coding work. But what I"
+  },
+  {
+    "start": "119.92",
+    "dur": "5.04",
+    "text": "find best for writing operations in"
+  },
+  {
+    "start": "121.92",
+    "dur": "6.24",
+    "text": "content creation is specifically using"
+  },
+  {
+    "start": "124.96",
+    "dur": "5.68",
+    "text": "these sub agents as more or less like"
+  },
+  {
+    "start": "128.16",
+    "dur": "4.4",
+    "text": "orchestrator agents for specific tasks."
+  },
+  {
+    "start": "130.64",
+    "dur": "4.72",
+    "text": "And then what you can do is load those"
+  },
+  {
+    "start": "132.56",
+    "dur": "5.28",
+    "text": "sub aents up with specific claude skills"
+  },
+  {
+    "start": "135.36",
+    "dur": "4.32",
+    "text": "that teach them how to carry out a"
+  },
+  {
+    "start": "137.84",
+    "dur": "4",
+    "text": "specific task like writing a newsletter"
+  },
+  {
+    "start": "139.68",
+    "dur": "3.919",
+    "text": "or a thought leadership article or maybe"
+  },
+  {
+    "start": "141.84",
+    "dur": "3.68",
+    "text": "social media posts and the list can go"
+  },
+  {
+    "start": "143.599",
+    "dur": "3.521",
+    "text": "on and on. So what you really want is"
+  },
+  {
+    "start": "145.52",
+    "dur": "4.48",
+    "text": "these sub agents to be like"
+  },
+  {
+    "start": "147.12",
+    "dur": "5.04",
+    "text": "orchestrators and then have a library of"
+  },
+  {
+    "start": "150",
+    "dur": "4.8",
+    "text": "skills that they can invoke under them"
+  },
+  {
+    "start": "152.16",
+    "dur": "5.76",
+    "text": "to carry out specific writing or content"
+  },
+  {
+    "start": "154.8",
+    "dur": "5.04",
+    "text": "tasks. Also reusability once created you"
+  },
+  {
+    "start": "157.92",
+    "dur": "3.76",
+    "text": "can use them across different projects."
+  },
+  {
+    "start": "159.84",
+    "dur": "3.36",
+    "text": "You could copy and paste these agents."
+  },
+  {
+    "start": "161.68",
+    "dur": "4.24",
+    "text": "You could sell them. You can use them in"
+  },
+  {
+    "start": "163.2",
+    "dur": "4.56",
+    "text": "client systems. All of that is possible."
+  },
+  {
+    "start": "165.92",
+    "dur": "4",
+    "text": "And then we have flexible permissions."
+  },
+  {
+    "start": "167.76",
+    "dur": "3.839",
+    "text": "Each one can have different access to"
+  },
+  {
+    "start": "169.92",
+    "dur": "3.84",
+    "text": "different tools, which we'll see when we"
+  },
+  {
+    "start": "171.599",
+    "dur": "3.601",
+    "text": "actually create it. Now, to create this"
+  },
+  {
+    "start": "173.76",
+    "dur": "2.96",
+    "text": "on the left side of my screen, you're"
+  },
+  {
+    "start": "175.2",
+    "dur": "3.6",
+    "text": "going to see I have Claude code running"
+  },
+  {
+    "start": "176.72",
+    "dur": "4",
+    "text": "in the terminal. I'm using cursor, but"
+  },
+  {
+    "start": "178.8",
+    "dur": "4.079",
+    "text": "you could be using any, you know, code"
+  },
+  {
+    "start": "180.72",
+    "dur": "4.32",
+    "text": "editor tool that that you want. You can"
+  },
+  {
+    "start": "182.879",
+    "dur": "4.881",
+    "text": "also even use Claude's own desktop app,"
+  },
+  {
+    "start": "185.04",
+    "dur": "5.119",
+    "text": "which now has Claude code in it. And you"
+  },
+  {
+    "start": "187.76",
+    "dur": "4.64",
+    "text": "can even use a VS Code extension so you"
+  },
+  {
+    "start": "190.159",
+    "dur": "4.241",
+    "text": "could see all of your different folders."
+  },
+  {
+    "start": "192.4",
+    "dur": "4.72",
+    "text": "And then my writing system here, we have"
+  },
+  {
+    "start": "194.4",
+    "dur": "5.199",
+    "text": "a Claude file with an agents folder in a"
+  },
+  {
+    "start": "197.12",
+    "dur": "5.039",
+    "text": "skills folder. We have a context file or"
+  },
+  {
+    "start": "199.599",
+    "dur": "4.961",
+    "text": "context folder with my JSON context"
+  },
+  {
+    "start": "202.159",
+    "dur": "5.36",
+    "text": "profiles which explain to Claude, you"
+  },
+  {
+    "start": "204.56",
+    "dur": "5.12",
+    "text": "know, in JSON about my business about my"
+  },
+  {
+    "start": "207.519",
+    "dur": "4.481",
+    "text": "ideal client profiles and how to write"
+  },
+  {
+    "start": "209.68",
+    "dur": "4.8",
+    "text": "in my voice DNA. Then we have a"
+  },
+  {
+    "start": "212",
+    "dur": "4.48",
+    "text": "knowledge folder which I use to hold uh"
+  },
+  {
+    "start": "214.48",
+    "dur": "3.52",
+    "text": "you know all the different you know"
+  },
+  {
+    "start": "216.48",
+    "dur": "3.039",
+    "text": "drafts and knowledge of my writing"
+  },
+  {
+    "start": "218",
+    "dur": "3.12",
+    "text": "operations. And then we have our"
+  },
+  {
+    "start": "219.519",
+    "dur": "4.561",
+    "text": "claude.md"
+  },
+  {
+    "start": "221.12",
+    "dur": "5.039",
+    "text": "system prompt. Now you can have you know"
+  },
+  {
+    "start": "224.08",
+    "dur": "4.159",
+    "text": "whatever system that you're running"
+  },
+  {
+    "start": "226.159",
+    "dur": "5.36",
+    "text": "inside of claude code but you can also"
+  },
+  {
+    "start": "228.239",
+    "dur": "4.801",
+    "text": "get this exact starting kit folder. I'm"
+  },
+  {
+    "start": "231.519",
+    "dur": "3.521",
+    "text": "calling this like a claude code starter"
+  },
+  {
+    "start": "233.04",
+    "dur": "3.6",
+    "text": "kit and you can watch my master class"
+  },
+  {
+    "start": "235.04",
+    "dur": "3.839",
+    "text": "here that's also on YouTube and get"
+  },
+  {
+    "start": "236.64",
+    "dur": "4.56",
+    "text": "access to this starter kit that you can"
+  },
+  {
+    "start": "238.879",
+    "dur": "4.56",
+    "text": "just uh put right open up right in your"
+  },
+  {
+    "start": "241.2",
+    "dur": "4.08",
+    "text": "own cursor or claude code and use it."
+  },
+  {
+    "start": "243.439",
+    "dur": "4.16",
+    "text": "But either way works. Today we're going"
+  },
+  {
+    "start": "245.28",
+    "dur": "4.48",
+    "text": "to be just putting an agent inside of"
+  },
+  {
+    "start": "247.599",
+    "dur": "3.681",
+    "text": "this system. Okay. So what we're going"
+  },
+  {
+    "start": "249.76",
+    "dur": "3.679",
+    "text": "to do I'm going to open up the terminal"
+  },
+  {
+    "start": "251.28",
+    "dur": "4.72",
+    "text": "here and to create an agent the first"
+  },
+  {
+    "start": "253.439",
+    "dur": "4.48",
+    "text": "thing we need to do is put slash agent."
+  },
+  {
+    "start": "256",
+    "dur": "4.079",
+    "text": "And this is going to allow us to manage"
+  },
+  {
+    "start": "257.919",
+    "dur": "4.321",
+    "text": "our agent configurations. You can see I"
+  },
+  {
+    "start": "260.079",
+    "dur": "3.761",
+    "text": "already have one here that I created"
+  },
+  {
+    "start": "262.24",
+    "dur": "3.679",
+    "text": "which we are going to delete really"
+  },
+  {
+    "start": "263.84",
+    "dur": "3.68",
+    "text": "quick so that we could start fresh. But"
+  },
+  {
+    "start": "265.919",
+    "dur": "3.84",
+    "text": "you're going to see all right agents. No"
+  },
+  {
+    "start": "267.52",
+    "dur": "4.56",
+    "text": "agents found. Now we can create"
+  },
+  {
+    "start": "269.759",
+    "dur": "3.761",
+    "text": "specialized sub agents. Now there are a"
+  },
+  {
+    "start": "272.08",
+    "dur": "3.28",
+    "text": "couple built-in agents that you might"
+  },
+  {
+    "start": "273.52",
+    "dur": "3.04",
+    "text": "not even have realized using cloud code."
+  },
+  {
+    "start": "275.36",
+    "dur": "3.6",
+    "text": "These are the ones that cloud code"
+  },
+  {
+    "start": "276.56",
+    "dur": "4.48",
+    "text": "itself uses the ones that are like"
+  },
+  {
+    "start": "278.96",
+    "dur": "4.56",
+    "text": "automatically inside here. There's like"
+  },
+  {
+    "start": "281.04",
+    "dur": "4",
+    "text": "a general purpose one, a planning one,"
+  },
+  {
+    "start": "283.52",
+    "dur": "2.88",
+    "text": "but today we're going to create specific"
+  },
+  {
+    "start": "285.04",
+    "dur": "3.04",
+    "text": "ones for writing. So you're just going"
+  },
+  {
+    "start": "286.4",
+    "dur": "2.799",
+    "text": "to hit enter here. And then the first"
+  },
+  {
+    "start": "288.08",
+    "dur": "3.28",
+    "text": "thing you need to do is choose your"
+  },
+  {
+    "start": "289.199",
+    "dur": "4.481",
+    "text": "location. You can either choose project"
+  },
+  {
+    "start": "291.36",
+    "dur": "4.08",
+    "text": "meaning it's inside this project here or"
+  },
+  {
+    "start": "293.68",
+    "dur": "3.519",
+    "text": "personal meaning it's on your system"
+  },
+  {
+    "start": "295.44",
+    "dur": "4.64",
+    "text": "file or locally across all your"
+  },
+  {
+    "start": "297.199",
+    "dur": "5.201",
+    "text": "projects. For writing operations, I like"
+  },
+  {
+    "start": "300.08",
+    "dur": "4.16",
+    "text": "highly recommend using project specific"
+  },
+  {
+    "start": "302.4",
+    "dur": "3.76",
+    "text": "agents because it's super easy just to"
+  },
+  {
+    "start": "304.24",
+    "dur": "4",
+    "text": "take that file, copy it and paste it"
+  },
+  {
+    "start": "306.16",
+    "dur": "3.84",
+    "text": "into any other projects and keep"
+  },
+  {
+    "start": "308.24",
+    "dur": "3.04",
+    "text": "everything nice and clean. Especially if"
+  },
+  {
+    "start": "310",
+    "dur": "2.56",
+    "text": "you're dealing, for example, maybe"
+  },
+  {
+    "start": "311.28",
+    "dur": "3.12",
+    "text": "you're a ghostriter dealing with"
+  },
+  {
+    "start": "312.56",
+    "dur": "3.359",
+    "text": "multiple clients or maybe you're running"
+  },
+  {
+    "start": "314.4",
+    "dur": "3.84",
+    "text": "content for different startups or"
+  },
+  {
+    "start": "315.919",
+    "dur": "4.56",
+    "text": "businesses or CEOs or whatever. I like"
+  },
+  {
+    "start": "318.24",
+    "dur": "4.239",
+    "text": "to keep everything very siloed and"
+  },
+  {
+    "start": "320.479",
+    "dur": "4.321",
+    "text": "protected from one another. So, I always"
+  },
+  {
+    "start": "322.479",
+    "dur": "4.081",
+    "text": "use project here. The next we're going"
+  },
+  {
+    "start": "324.8",
+    "dur": "3.92",
+    "text": "to have to do is choose our generation"
+  },
+  {
+    "start": "326.56",
+    "dur": "4",
+    "text": "method. We can either generate with"
+  },
+  {
+    "start": "328.72",
+    "dur": "3.759",
+    "text": "Claude or we can do a manual"
+  },
+  {
+    "start": "330.56",
+    "dur": "3.84",
+    "text": "configuration. If you hit enter on"
+  },
+  {
+    "start": "332.479",
+    "dur": "3.761",
+    "text": "generate with Claude, all you have to do"
+  },
+  {
+    "start": "334.4",
+    "dur": "3.76",
+    "text": "is explain what kind of agent you want"
+  },
+  {
+    "start": "336.24",
+    "dur": "3.84",
+    "text": "very simply. Be as detailed as possible,"
+  },
+  {
+    "start": "338.16",
+    "dur": "3.12",
+    "text": "and Claude will create it for you. But"
+  },
+  {
+    "start": "340.08",
+    "dur": "2.72",
+    "text": "for today, that's not what we're going"
+  },
+  {
+    "start": "341.28",
+    "dur": "3.759",
+    "text": "to do. We're going to do a manual"
+  },
+  {
+    "start": "342.8",
+    "dur": "3.6",
+    "text": "configuration because I highly recommend"
+  },
+  {
+    "start": "345.039",
+    "dur": "2.88",
+    "text": "you just get good at writing these"
+  },
+  {
+    "start": "346.4",
+    "dur": "3.76",
+    "text": "system prompts or finding other people"
+  },
+  {
+    "start": "347.919",
+    "dur": "4.401",
+    "text": "like myself who provide them to you"
+  },
+  {
+    "start": "350.16",
+    "dur": "4.16",
+    "text": "because these are highly specific for"
+  },
+  {
+    "start": "352.32",
+    "dur": "4.96",
+    "text": "writing operations. These are the ones"
+  },
+  {
+    "start": "354.32",
+    "dur": "4.64",
+    "text": "we use, I use in my daily uh, you know,"
+  },
+  {
+    "start": "357.28",
+    "dur": "3.12",
+    "text": "writing businesses and content"
+  },
+  {
+    "start": "358.96",
+    "dur": "3.519",
+    "text": "businesses. So, we're going to hit enter"
+  },
+  {
+    "start": "360.4",
+    "dur": "4",
+    "text": "on manual configuration. And the first"
+  },
+  {
+    "start": "362.479",
+    "dur": "4",
+    "text": "thing we need to do is enter a unique"
+  },
+  {
+    "start": "364.4",
+    "dur": "5.2",
+    "text": "identifier. Today, what we're going to"
+  },
+  {
+    "start": "366.479",
+    "dur": "4.241",
+    "text": "build is a newsletter uh writing agent."
+  },
+  {
+    "start": "369.6",
+    "dur": "3.52",
+    "text": "So, we're going to say a newsletter"
+  },
+  {
+    "start": "370.72",
+    "dur": "5.199",
+    "text": "writer or we'll just say a newsletter"
+  },
+  {
+    "start": "373.12",
+    "dur": "4.96",
+    "text": "agent. Click enter. Now, we need to"
+  },
+  {
+    "start": "375.919",
+    "dur": "3.84",
+    "text": "write the system prompt. Now, there are"
+  },
+  {
+    "start": "378.08",
+    "dur": "4.16",
+    "text": "many many techniques to go into writing"
+  },
+  {
+    "start": "379.759",
+    "dur": "4.16",
+    "text": "system prompts. You can go learn those."
+  },
+  {
+    "start": "382.24",
+    "dur": "3.6",
+    "text": "You can study those. You can try it out"
+  },
+  {
+    "start": "383.919",
+    "dur": "3.84",
+    "text": "yourself. I highly recommend always"
+  },
+  {
+    "start": "385.84",
+    "dur": "3.919",
+    "text": "doing it. I don't write system prompts"
+  },
+  {
+    "start": "387.759",
+    "dur": "4.241",
+    "text": "from scratch either. I work with Claude"
+  },
+  {
+    "start": "389.759",
+    "dur": "4.801",
+    "text": "to write system prompts. Oftentimes what"
+  },
+  {
+    "start": "392",
+    "dur": "4.96",
+    "text": "I'll do is also, you know, prior to this"
+  },
+  {
+    "start": "394.56",
+    "dur": "4.32",
+    "text": "whole, you know, new Claude code and"
+  },
+  {
+    "start": "396.96",
+    "dur": "3.2",
+    "text": "agents and all these different, you"
+  },
+  {
+    "start": "398.88",
+    "dur": "3.439",
+    "text": "know, ways to run your writing"
+  },
+  {
+    "start": "400.16",
+    "dur": "3.759",
+    "text": "operations. A lot of a lot of what we"
+  },
+  {
+    "start": "402.319",
+    "dur": "3.761",
+    "text": "were using were prompts, right? Very"
+  },
+  {
+    "start": "403.919",
+    "dur": "4.4",
+    "text": "detailed prompts beforehand. You can"
+  },
+  {
+    "start": "406.08",
+    "dur": "4.239",
+    "text": "take those prompts and they are amazing"
+  },
+  {
+    "start": "408.319",
+    "dur": "4.32",
+    "text": "starting points for building out into"
+  },
+  {
+    "start": "410.319",
+    "dur": "4",
+    "text": "full agent system prompts. So, if you"
+  },
+  {
+    "start": "412.639",
+    "dur": "3.601",
+    "text": "have prompts that you really like or"
+  },
+  {
+    "start": "414.319",
+    "dur": "3.681",
+    "text": "that you've been using, just give that"
+  },
+  {
+    "start": "416.24",
+    "dur": "4.16",
+    "text": "to Claude and ask it to help you turn"
+  },
+  {
+    "start": "418",
+    "dur": "4.88",
+    "text": "that into an agent system prompt. Uh,"
+  },
+  {
+    "start": "420.4",
+    "dur": "4.56",
+    "text": "and then go from there. Here, what we're"
+  },
+  {
+    "start": "422.88",
+    "dur": "4.96",
+    "text": "going to do is I already have one. We're"
+  },
+  {
+    "start": "424.96",
+    "dur": "4.639",
+    "text": "going to come here to my resources for"
+  },
+  {
+    "start": "427.84",
+    "dur": "4.24",
+    "text": "my Subscribers."
+  },
+  {
+    "start": "429.599",
+    "dur": "4.961",
+    "text": "So, if you want this exact uh these"
+  },
+  {
+    "start": "432.08",
+    "dur": "4.72",
+    "text": "exact agent system prompts and various"
+  },
+  {
+    "start": "434.56",
+    "dur": "4.079",
+    "text": "other tools and skills, uh, check out my"
+  },
+  {
+    "start": "436.8",
+    "dur": "3.6",
+    "text": "Substack. That's where you can get it."
+  },
+  {
+    "start": "438.639",
+    "dur": "3.361",
+    "text": "But we have the newsletter writer agent"
+  },
+  {
+    "start": "440.4",
+    "dur": "3.76",
+    "text": "here and I have written out the entire"
+  },
+  {
+    "start": "442",
+    "dur": "4.88",
+    "text": "system prompt. So we got the name like I"
+  },
+  {
+    "start": "444.16",
+    "dur": "4.8",
+    "text": "said and now here is the system prompt."
+  },
+  {
+    "start": "446.88",
+    "dur": "4.08",
+    "text": "Claude code agents or sub aents all"
+  },
+  {
+    "start": "448.96",
+    "dur": "4.4",
+    "text": "they're using is an MD you know a"
+  },
+  {
+    "start": "450.96",
+    "dur": "4.16",
+    "text": "markdown file for the system prompt. So"
+  },
+  {
+    "start": "453.36",
+    "dur": "4.399",
+    "text": "you can literally just copy this here."
+  },
+  {
+    "start": "455.12",
+    "dur": "4.32",
+    "text": "We have a newsletter writer agent. I'm"
+  },
+  {
+    "start": "457.759",
+    "dur": "3.601",
+    "text": "going to copy all of this and then we'll"
+  },
+  {
+    "start": "459.44",
+    "dur": "4.159",
+    "text": "go through it and I'll read you through"
+  },
+  {
+    "start": "461.36",
+    "dur": "5.119",
+    "text": "some of it so you can see kind of how"
+  },
+  {
+    "start": "463.599",
+    "dur": "4.961",
+    "text": "this works. Okay. So here on the left"
+  },
+  {
+    "start": "466.479",
+    "dur": "4.081",
+    "text": "now we have the system prompt."
+  },
+  {
+    "start": "468.56",
+    "dur": "4.24",
+    "text": "Newsletter writer agent. You are a"
+  },
+  {
+    "start": "470.56",
+    "dur": "4.639",
+    "text": "newsletter writing specialist. Your job"
+  },
+  {
+    "start": "472.8",
+    "dur": "4.88",
+    "text": "is to coordinate the production of"
+  },
+  {
+    "start": "475.199",
+    "dur": "4.481",
+    "text": "complete ready to publish newsletters."
+  },
+  {
+    "start": "477.68",
+    "dur": "4.079",
+    "text": "We then tell it that it's not writing"
+  },
+  {
+    "start": "479.68",
+    "dur": "4.32",
+    "text": "from scratch. What it needs to do is"
+  },
+  {
+    "start": "481.759",
+    "dur": "4.72",
+    "text": "load the user's context profiles from"
+  },
+  {
+    "start": "484",
+    "dur": "4.24",
+    "text": "our system here on the left. It needs to"
+  },
+  {
+    "start": "486.479",
+    "dur": "4.081",
+    "text": "gather necessary information from the"
+  },
+  {
+    "start": "488.24",
+    "dur": "4.399",
+    "text": "user, find and use the appropriate"
+  },
+  {
+    "start": "490.56",
+    "dur": "5.039",
+    "text": "writing skill. Like I told you, I build"
+  },
+  {
+    "start": "492.639",
+    "dur": "4.4",
+    "text": "my agents so they invoke Claude skills."
+  },
+  {
+    "start": "495.599",
+    "dur": "2.961",
+    "text": "One of the most incredible things about"
+  },
+  {
+    "start": "497.039",
+    "dur": "3.681",
+    "text": "Claude Code now is we have all these"
+  },
+  {
+    "start": "498.56",
+    "dur": "4.72",
+    "text": "tools at our disposal. We have the sub"
+  },
+  {
+    "start": "500.72",
+    "dur": "4.319",
+    "text": "agents, you know, or the cloud. MD at"
+  },
+  {
+    "start": "503.28",
+    "dur": "3.759",
+    "text": "the top. We have sub agents underneath"
+  },
+  {
+    "start": "505.039",
+    "dur": "4.72",
+    "text": "that. We have library of cloud skills"
+  },
+  {
+    "start": "507.039",
+    "dur": "4.481",
+    "text": "underneath that. We have MCP servers."
+  },
+  {
+    "start": "509.759",
+    "dur": "3.76",
+    "text": "There's so much we can do for writing"
+  },
+  {
+    "start": "511.52",
+    "dur": "3.28",
+    "text": "operations. Like nobody is doing this."
+  },
+  {
+    "start": "513.519",
+    "dur": "2.721",
+    "text": "So, if you're watching this video right"
+  },
+  {
+    "start": "514.8",
+    "dur": "3.359",
+    "text": "now, if you're following me, if you're"
+  },
+  {
+    "start": "516.24",
+    "dur": "5.44",
+    "text": "even attempting to start building this"
+  },
+  {
+    "start": "518.159",
+    "dur": "6.081",
+    "text": "out, you are like in the 1% of the 1% of"
+  },
+  {
+    "start": "521.68",
+    "dur": "4.56",
+    "text": "people using AI for writing operations"
+  },
+  {
+    "start": "524.24",
+    "dur": "3.68",
+    "text": "because nobody else is really doing this"
+  },
+  {
+    "start": "526.24",
+    "dur": "3.84",
+    "text": "right now. And then it's going to"
+  },
+  {
+    "start": "527.92",
+    "dur": "4.16",
+    "text": "deliver a complete newsletter. We go"
+  },
+  {
+    "start": "530.08",
+    "dur": "4.4",
+    "text": "through the step-by-step process. We"
+  },
+  {
+    "start": "532.08",
+    "dur": "4.319",
+    "text": "tell it what to do and what not to do."
+  },
+  {
+    "start": "534.48",
+    "dur": "3.2",
+    "text": "All right. After we have the system"
+  },
+  {
+    "start": "536.399",
+    "dur": "3.041",
+    "text": "prompts, we're just going to hit enter"
+  },
+  {
+    "start": "537.68",
+    "dur": "4",
+    "text": "here. And now we're going to give it a"
+  },
+  {
+    "start": "539.44",
+    "dur": "4.88",
+    "text": "description. This description is what"
+  },
+  {
+    "start": "541.68",
+    "dur": "5.36",
+    "text": "your your main claude is going to read"
+  },
+  {
+    "start": "544.32",
+    "dur": "5.36",
+    "text": "to know like when and when to use or"
+  },
+  {
+    "start": "547.04",
+    "dur": "4.56",
+    "text": "invoke this agent. I actually have this"
+  },
+  {
+    "start": "549.68",
+    "dur": "4.88",
+    "text": "written here too. So, let me just grab"
+  },
+  {
+    "start": "551.6",
+    "dur": "5.76",
+    "text": "that also and copy it. We're going to"
+  },
+  {
+    "start": "554.56",
+    "dur": "5.04",
+    "text": "tell it here in its description. We're"
+  },
+  {
+    "start": "557.36",
+    "dur": "4.24",
+    "text": "going to say writes complete newsletters"
+  },
+  {
+    "start": "559.6",
+    "dur": "4.48",
+    "text": "using context profiles and available"
+  },
+  {
+    "start": "561.6",
+    "dur": "4.48",
+    "text": "skills. Use when a user wants to write"
+  },
+  {
+    "start": "564.08",
+    "dur": "3.759",
+    "text": "Substack newsletters. You can change"
+  },
+  {
+    "start": "566.08",
+    "dur": "3.6",
+    "text": "this to just uh you know thought"
+  },
+  {
+    "start": "567.839",
+    "dur": "3.281",
+    "text": "leadership newsletters or just regular"
+  },
+  {
+    "start": "569.68",
+    "dur": "3.599",
+    "text": "newsletters. Like I said, I have"
+  },
+  {
+    "start": "571.12",
+    "dur": "4.8",
+    "text": "Substack. So I use this for myself for"
+  },
+  {
+    "start": "573.279",
+    "dur": "4.801",
+    "text": "my own Substack uh content. And then"
+  },
+  {
+    "start": "575.92",
+    "dur": "4.32",
+    "text": "we'll say mentions write a newsletter or"
+  },
+  {
+    "start": "578.08",
+    "dur": "4.08",
+    "text": "draft a newsletter or needs long form"
+  },
+  {
+    "start": "580.24",
+    "dur": "3.44",
+    "text": "educational content for their audience."
+  },
+  {
+    "start": "582.16",
+    "dur": "3.2",
+    "text": "So this just helps Claude understand"
+  },
+  {
+    "start": "583.68",
+    "dur": "4",
+    "text": "when to use it. We're going to hit"
+  },
+  {
+    "start": "585.36",
+    "dur": "3.919",
+    "text": "enter. Now we can select the tools we"
+  },
+  {
+    "start": "587.68",
+    "dur": "3.36",
+    "text": "want to give it access to. We want to"
+  },
+  {
+    "start": "589.279",
+    "dur": "3.841",
+    "text": "give it access to all the tools here."
+  },
+  {
+    "start": "591.04",
+    "dur": "3.919",
+    "text": "But you can even open this up and and"
+  },
+  {
+    "start": "593.12",
+    "dur": "3.36",
+    "text": "take away or give certain access to"
+  },
+  {
+    "start": "594.959",
+    "dur": "3.521",
+    "text": "certain tools. We're going to give it"
+  },
+  {
+    "start": "596.48",
+    "dur": "4",
+    "text": "access to all tools. And now we need to"
+  },
+  {
+    "start": "598.48",
+    "dur": "3.6",
+    "text": "select the model. If you do writing"
+  },
+  {
+    "start": "600.48",
+    "dur": "3.68",
+    "text": "operations at scale, if you're serious"
+  },
+  {
+    "start": "602.08",
+    "dur": "3.52",
+    "text": "about writing with AI in any level, if"
+  },
+  {
+    "start": "604.16",
+    "dur": "3.359",
+    "text": "you're actually using it for"
+  },
+  {
+    "start": "605.6",
+    "dur": "4.64",
+    "text": "professional work, highly recommend you"
+  },
+  {
+    "start": "607.519",
+    "dur": "4.801",
+    "text": "sign up for Claude's uh or Anthropics"
+  },
+  {
+    "start": "610.24",
+    "dur": "4.719",
+    "text": "Claude Max plan. Anywhere between a"
+  },
+  {
+    "start": "612.32",
+    "dur": "5.519",
+    "text": "hundred I think to $200 a month, right?"
+  },
+  {
+    "start": "614.959",
+    "dur": "5.601",
+    "text": "I use the $200 a month plan and I run"
+  },
+  {
+    "start": "617.839",
+    "dur": "5.281",
+    "text": "Opus like multiple hours a day all day"
+  },
+  {
+    "start": "620.56",
+    "dur": "4.32",
+    "text": "long. I never run into limits. So, if"
+  },
+  {
+    "start": "623.12",
+    "dur": "4.719",
+    "text": "that's what you have, I recommend using"
+  },
+  {
+    "start": "624.88",
+    "dur": "4.24",
+    "text": "Opus, uh, you know, as much as you can."
+  },
+  {
+    "start": "627.839",
+    "dur": "3.361",
+    "text": "Then, we're just going to choose a color"
+  },
+  {
+    "start": "629.12",
+    "dur": "4.48",
+    "text": "here for the agent, whatever. Automatic"
+  },
+  {
+    "start": "631.2",
+    "dur": "5.44",
+    "text": "color. And this is our new agent. We can"
+  },
+  {
+    "start": "633.6",
+    "dur": "5.28",
+    "text": "now enter to save it. And there it is."
+  },
+  {
+    "start": "636.64",
+    "dur": "4",
+    "text": "We now have the agent, newsletter agent."
+  },
+  {
+    "start": "638.88",
+    "dur": "4",
+    "text": "And you're going to see that now in this"
+  },
+  {
+    "start": "640.64",
+    "dur": "5.6",
+    "text": "dotcloud file, we have agents and we"
+  },
+  {
+    "start": "642.88",
+    "dur": "5.199",
+    "text": "have our newsletter agent right here. So"
+  },
+  {
+    "start": "646.24",
+    "dur": "3.76",
+    "text": "it's as simple as that. That's how we"
+  },
+  {
+    "start": "648.079",
+    "dur": "3.521",
+    "text": "build the agent. But we're not done yet,"
+  },
+  {
+    "start": "650",
+    "dur": "3.6",
+    "text": "right? Because yeah, the agents there,"
+  },
+  {
+    "start": "651.6",
+    "dur": "4",
+    "text": "but it has no skills. This is like a"
+  },
+  {
+    "start": "653.6",
+    "dur": "4",
+    "text": "agent with no skills. So we need to give"
+  },
+  {
+    "start": "655.6",
+    "dur": "3.84",
+    "text": "it skills. And the skill we're going to"
+  },
+  {
+    "start": "657.6",
+    "dur": "3.84",
+    "text": "give it, which it should eventually"
+  },
+  {
+    "start": "659.44",
+    "dur": "4.24",
+    "text": "have, you know, many skills at its"
+  },
+  {
+    "start": "661.44",
+    "dur": "3.6",
+    "text": "disposal to, you know, invoke. But what"
+  },
+  {
+    "start": "663.68",
+    "dur": "3.92",
+    "text": "I want to give it is a thought"
+  },
+  {
+    "start": "665.04",
+    "dur": "4.32",
+    "text": "leadership newsletter skill. All right."
+  },
+  {
+    "start": "667.6",
+    "dur": "3.52",
+    "text": "Also, I'm going to include this for"
+  },
+  {
+    "start": "669.36",
+    "dur": "3.919",
+    "text": "subsec members. If you want, you can"
+  },
+  {
+    "start": "671.12",
+    "dur": "4.24",
+    "text": "just download and use this exact claude"
+  },
+  {
+    "start": "673.279",
+    "dur": "4",
+    "text": "skill. You could or you can go look for"
+  },
+  {
+    "start": "675.36",
+    "dur": "3.28",
+    "text": "your own skills. You know, if you have"
+  },
+  {
+    "start": "677.279",
+    "dur": "3.281",
+    "text": "them already, there's libraries out"
+  },
+  {
+    "start": "678.64",
+    "dur": "3.199",
+    "text": "there. You could try to find them. But I"
+  },
+  {
+    "start": "680.56",
+    "dur": "3.2",
+    "text": "really like this thought leadership"
+  },
+  {
+    "start": "681.839",
+    "dur": "4.161",
+    "text": "newsletter skill. I use it for myself,"
+  },
+  {
+    "start": "683.76",
+    "dur": "3.6",
+    "text": "for clients. Uh you can use it for, you"
+  },
+  {
+    "start": "686",
+    "dur": "3.92",
+    "text": "know, writing thought leadership for"
+  },
+  {
+    "start": "687.36",
+    "dur": "5.2",
+    "text": "executives, CEOs, startups, for"
+  },
+  {
+    "start": "689.92",
+    "dur": "5.52",
+    "text": "yourself, for industry leaders. And what"
+  },
+  {
+    "start": "692.56",
+    "dur": "4.32",
+    "text": "this newsletter skill does is it writes"
+  },
+  {
+    "start": "695.44",
+    "dur": "4.48",
+    "text": "valuep packed thought leadership"
+  },
+  {
+    "start": "696.88",
+    "dur": "5.28",
+    "text": "newsletters between 800 to 1500 words"
+  },
+  {
+    "start": "699.92",
+    "dur": "4.72",
+    "text": "that educate, entertain, and position"
+  },
+  {
+    "start": "702.16",
+    "dur": "4.4",
+    "text": "the writer as the go-to authority in"
+  },
+  {
+    "start": "704.64",
+    "dur": "4.639",
+    "text": "their space. We're going to tell it when"
+  },
+  {
+    "start": "706.56",
+    "dur": "4.88",
+    "text": "to activate this. When a user wants to"
+  },
+  {
+    "start": "709.279",
+    "dur": "3.841",
+    "text": "write a newsletter weekly email, we're"
+  },
+  {
+    "start": "711.44",
+    "dur": "3.68",
+    "text": "going to give it a core philosophy. Now,"
+  },
+  {
+    "start": "713.12",
+    "dur": "4.159",
+    "text": "this is very detailed skill. My claude"
+  },
+  {
+    "start": "715.12",
+    "dur": "5.12",
+    "text": "skills are highly detailed, multiple"
+  },
+  {
+    "start": "717.279",
+    "dur": "5.12",
+    "text": "pages long. Uh so we have the four"
+  },
+  {
+    "start": "720.24",
+    "dur": "4.88",
+    "text": "pillars of a killer newsletter. We tell"
+  },
+  {
+    "start": "722.399",
+    "dur": "4.481",
+    "text": "it, you know, how to load our contact"
+  },
+  {
+    "start": "725.12",
+    "dur": "3.44",
+    "text": "profiles. Kind of everything you see"
+  },
+  {
+    "start": "726.88",
+    "dur": "3.36",
+    "text": "that I built here is very specific to"
+  },
+  {
+    "start": "728.56",
+    "dur": "3.04",
+    "text": "our system. So this is not something"
+  },
+  {
+    "start": "730.24",
+    "dur": "4.159",
+    "text": "other people are going to be copying and"
+  },
+  {
+    "start": "731.6",
+    "dur": "4.4",
+    "text": "using. We have a very uh very unique"
+  },
+  {
+    "start": "734.399",
+    "dur": "4",
+    "text": "approach here to building out writing"
+  },
+  {
+    "start": "736",
+    "dur": "3.68",
+    "text": "operations inside of Cloud Code. We're"
+  },
+  {
+    "start": "738.399",
+    "dur": "4.56",
+    "text": "going to tell it to load the context"
+  },
+  {
+    "start": "739.68",
+    "dur": "5.76",
+    "text": "profiles, craft subject lines, uh what"
+  },
+  {
+    "start": "742.959",
+    "dur": "4.801",
+    "text": "else? Write these hooks, greetings, all"
+  },
+  {
+    "start": "745.44",
+    "dur": "3.839",
+    "text": "right, CTAs, all of that. It goes on and"
+  },
+  {
+    "start": "747.76",
+    "dur": "3.759",
+    "text": "on and on, right? Not going to read"
+  },
+  {
+    "start": "749.279",
+    "dur": "4",
+    "text": "through all of it. But once you have"
+  },
+  {
+    "start": "751.519",
+    "dur": "4.161",
+    "text": "this skill, which you can literally"
+  },
+  {
+    "start": "753.279",
+    "dur": "4.321",
+    "text": "download if you want the zip file here,"
+  },
+  {
+    "start": "755.68",
+    "dur": "3.92",
+    "text": "and then we'll have the down here in the"
+  },
+  {
+    "start": "757.6",
+    "dur": "5.44",
+    "text": "downloads, that will give us this folder"
+  },
+  {
+    "start": "759.6",
+    "dur": "5.84",
+    "text": "here. And this is already in the correct"
+  },
+  {
+    "start": "763.04",
+    "dur": "5.84",
+    "text": "format for Claude skills, which is the"
+  },
+  {
+    "start": "765.44",
+    "dur": "5.6",
+    "text": "skill.md file in folder. And we just are"
+  },
+  {
+    "start": "768.88",
+    "dur": "4",
+    "text": "going to drag that into our skills,"
+  },
+  {
+    "start": "771.04",
+    "dur": "4.799",
+    "text": "which I already have there. So just"
+  },
+  {
+    "start": "772.88",
+    "dur": "4.639",
+    "text": "replace it. And now you could see we"
+  },
+  {
+    "start": "775.839",
+    "dur": "4.401",
+    "text": "have my agents folder with my newsletter"
+  },
+  {
+    "start": "777.519",
+    "dur": "4.32",
+    "text": "agent and my skills folder with a couple"
+  },
+  {
+    "start": "780.24",
+    "dur": "4.96",
+    "text": "skills that are already there and then"
+  },
+  {
+    "start": "781.839",
+    "dur": "5.44",
+    "text": "this new thought leadership skill. So"
+  },
+  {
+    "start": "785.2",
+    "dur": "4.8",
+    "text": "now we're officially done pretty much."
+  },
+  {
+    "start": "787.279",
+    "dur": "5.441",
+    "text": "Now we have our our writing sub agent"
+  },
+  {
+    "start": "790",
+    "dur": "4.88",
+    "text": "inside of Claude Code for newsletters"
+  },
+  {
+    "start": "792.72",
+    "dur": "4.08",
+    "text": "and we have a thought leadership"
+  },
+  {
+    "start": "794.88",
+    "dur": "5.12",
+    "text": "newsletter skill that we're going to"
+  },
+  {
+    "start": "796.8",
+    "dur": "4.8",
+    "text": "give that agent access to. So the next"
+  },
+  {
+    "start": "800",
+    "dur": "3.76",
+    "text": "thing we do is just go to a regular"
+  },
+  {
+    "start": "801.6",
+    "dur": "3.52",
+    "text": "chat. And now this would be up to you,"
+  },
+  {
+    "start": "803.76",
+    "dur": "3.68",
+    "text": "you know, however it is you want to"
+  },
+  {
+    "start": "805.12",
+    "dur": "4.56",
+    "text": "write these. Say you are working for a"
+  },
+  {
+    "start": "807.44",
+    "dur": "4.24",
+    "text": "company or you are a ghostwriter for"
+  },
+  {
+    "start": "809.68",
+    "dur": "3.76",
+    "text": "CEOs or executives and you need to write"
+  },
+  {
+    "start": "811.68",
+    "dur": "4.24",
+    "text": "a thought leadership newsletter. You"
+  },
+  {
+    "start": "813.44",
+    "dur": "4.32",
+    "text": "just need to provide your notes or"
+  },
+  {
+    "start": "815.92",
+    "dur": "4.24",
+    "text": "transcripts or whatever serves as the"
+  },
+  {
+    "start": "817.76",
+    "dur": "3.759",
+    "text": "basis of your idea for the newsletter."
+  },
+  {
+    "start": "820.16",
+    "dur": "2.799",
+    "text": "You're going to give it to Claude and"
+  },
+  {
+    "start": "821.519",
+    "dur": "3.361",
+    "text": "tell it to write a thought leadership"
+  },
+  {
+    "start": "822.959",
+    "dur": "3.841",
+    "text": "newsletter. Just to demonstrate this"
+  },
+  {
+    "start": "824.88",
+    "dur": "4.959",
+    "text": "quickly, I'll go to a YouTube video that"
+  },
+  {
+    "start": "826.8",
+    "dur": "4.8",
+    "text": "I released last week on adding 16"
+  },
+  {
+    "start": "829.839",
+    "dur": "3.361",
+    "text": "professional skills to your Cloud Code"
+  },
+  {
+    "start": "831.6",
+    "dur": "3.2",
+    "text": "setup. And I'm literally just going to"
+  },
+  {
+    "start": "833.2",
+    "dur": "3.199",
+    "text": "paste this transcript in here. And I'm"
+  },
+  {
+    "start": "834.8",
+    "dur": "4.719",
+    "text": "going to, you know, use voice dictation"
+  },
+  {
+    "start": "836.399",
+    "dur": "5.201",
+    "text": "to tell Claude, um, here is a transcript"
+  },
+  {
+    "start": "839.519",
+    "dur": "3.841",
+    "text": "on a YouTube video I did last week on"
+  },
+  {
+    "start": "841.6",
+    "dur": "4",
+    "text": "adding professional skills to your"
+  },
+  {
+    "start": "843.36",
+    "dur": "4.4",
+    "text": "Claude code setup. I want you to write a"
+  },
+  {
+    "start": "845.6",
+    "dur": "3.84",
+    "text": "thought leadership newsletter, uh, based"
+  },
+  {
+    "start": "847.76",
+    "dur": "3.28",
+    "text": "on this."
+  },
+  {
+    "start": "849.44",
+    "dur": "4.32",
+    "text": "And then we're going to paste it. Paste"
+  },
+  {
+    "start": "851.04",
+    "dur": "4.32",
+    "text": "the transcript. Now when Claude starts"
+  },
+  {
+    "start": "853.76",
+    "dur": "3.92",
+    "text": "spinning up this process here, the first"
+  },
+  {
+    "start": "855.36",
+    "dur": "4.719",
+    "text": "thing it's going to do is read our"
+  },
+  {
+    "start": "857.68",
+    "dur": "4",
+    "text": "context profiles here, our JSON context"
+  },
+  {
+    "start": "860.079",
+    "dur": "3.601",
+    "text": "profiles. This is going to help it"
+  },
+  {
+    "start": "861.68",
+    "dur": "4.88",
+    "text": "understand our business or voice our"
+  },
+  {
+    "start": "863.68",
+    "dur": "5.36",
+    "text": "ideal client profiles. Uh so we want to"
+  },
+  {
+    "start": "866.56",
+    "dur": "5.04",
+    "text": "do that that is written into our claude"
+  },
+  {
+    "start": "869.04",
+    "dur": "5.359",
+    "text": "file or claude.md that is written into"
+  },
+  {
+    "start": "871.6",
+    "dur": "5.28",
+    "text": "our agents. Our skills all very heavily"
+  },
+  {
+    "start": "874.399",
+    "dur": "3.68",
+    "text": "rely on these context profiles. After"
+  },
+  {
+    "start": "876.88",
+    "dur": "2.8",
+    "text": "that, it's going to launch the"
+  },
+  {
+    "start": "878.079",
+    "dur": "4",
+    "text": "newsletter agent to write this thought"
+  },
+  {
+    "start": "879.68",
+    "dur": "3.76",
+    "text": "leadership newsletter based on my"
+  },
+  {
+    "start": "882.079",
+    "dur": "3.12",
+    "text": "YouTube video. So, that's going to take"
+  },
+  {
+    "start": "883.44",
+    "dur": "3.839",
+    "text": "a few seconds. I'll let that run"
+  },
+  {
+    "start": "885.199",
+    "dur": "5.2",
+    "text": "through. It's going to invoke the"
+  },
+  {
+    "start": "887.279",
+    "dur": "5.841",
+    "text": "thought leadership skill and uh and then"
+  },
+  {
+    "start": "890.399",
+    "dur": "4.24",
+    "text": "we'll see what the final output is. Now,"
+  },
+  {
+    "start": "893.12",
+    "dur": "4.079",
+    "text": "when you see this here, you could see"
+  },
+  {
+    "start": "894.639",
+    "dur": "4.721",
+    "text": "that this is the actual agent. Where did"
+  },
+  {
+    "start": "897.199",
+    "dur": "4.32",
+    "text": "it go? Here. This is the actual agent"
+  },
+  {
+    "start": "899.36",
+    "dur": "3.919",
+    "text": "that's spinning up and working here. And"
+  },
+  {
+    "start": "901.519",
+    "dur": "4",
+    "text": "we can even run this now in the"
+  },
+  {
+    "start": "903.279",
+    "dur": "3.92",
+    "text": "background. If you were to hit control"
+  },
+  {
+    "start": "905.519",
+    "dur": "3.44",
+    "text": "uh B, you could run this in the"
+  },
+  {
+    "start": "907.199",
+    "dur": "3.601",
+    "text": "background as you're doing other things"
+  },
+  {
+    "start": "908.959",
+    "dur": "3.521",
+    "text": "inside of Cloud Code, which is awesome."
+  },
+  {
+    "start": "910.8",
+    "dur": "3.039",
+    "text": "You can run up multiple agents. You can"
+  },
+  {
+    "start": "912.48",
+    "dur": "3.52",
+    "text": "work on something else while it's"
+  },
+  {
+    "start": "913.839",
+    "dur": "4.24",
+    "text": "running. Uh but, you know, that's that's"
+  },
+  {
+    "start": "916",
+    "dur": "4.24",
+    "text": "for a future another video after you"
+  },
+  {
+    "start": "918.079",
+    "dur": "3.921",
+    "text": "start using uh agents. So, let's let"
+  },
+  {
+    "start": "920.24",
+    "dur": "4.08",
+    "text": "that run for a few seconds and then get"
+  },
+  {
+    "start": "922",
+    "dur": "4.16",
+    "text": "back to it. All right. So, it literally"
+  },
+  {
+    "start": "924.32",
+    "dur": "4.959",
+    "text": "took like less than a minute and it's"
+  },
+  {
+    "start": "926.16",
+    "dur": "5.6",
+    "text": "already done. We can see here that it"
+  },
+  {
+    "start": "929.279",
+    "dur": "4.24",
+    "text": "finished. The newsletter agent finished"
+  },
+  {
+    "start": "931.76",
+    "dur": "3.6",
+    "text": "and it gave us our thought leadership"
+  },
+  {
+    "start": "933.519",
+    "dur": "4.961",
+    "text": "newsletter based on the YouTube video."
+  },
+  {
+    "start": "935.36",
+    "dur": "4.96",
+    "text": "It gives us our subject line options. We"
+  },
+  {
+    "start": "938.48",
+    "dur": "3.599",
+    "text": "have Claude Code has a secret upgrade"
+  },
+  {
+    "start": "940.32",
+    "dur": "3.6",
+    "text": "most people don't know about. I just"
+  },
+  {
+    "start": "942.079",
+    "dur": "3.521",
+    "text": "discovered hidden skills inside of Cloud"
+  },
+  {
+    "start": "943.92",
+    "dur": "3.12",
+    "text": "Code. The Claude feature that turns your"
+  },
+  {
+    "start": "945.6",
+    "dur": "3.28",
+    "text": "writing system into a content machine."
+  },
+  {
+    "start": "947.04",
+    "dur": "4.64",
+    "text": "This is all based off of the skill I"
+  },
+  {
+    "start": "948.88",
+    "dur": "4.24",
+    "text": "gave it. We have the newsletter,"
+  },
+  {
+    "start": "951.68",
+    "dur": "3.68",
+    "text": "you know, this the thought leadership"
+  },
+  {
+    "start": "953.12",
+    "dur": "4.56",
+    "text": "newsletter completely written out in my"
+  },
+  {
+    "start": "955.36",
+    "dur": "5.68",
+    "text": "voice using my voice DNA targeted at my"
+  },
+  {
+    "start": "957.68",
+    "dur": "6.24",
+    "text": "ICP. uh you know at my ideal client"
+  },
+  {
+    "start": "961.04",
+    "dur": "5.28",
+    "text": "profile with my business context with"
+  },
+  {
+    "start": "963.92",
+    "dur": "5.68",
+    "text": "best practices for writing subject lines"
+  },
+  {
+    "start": "966.32",
+    "dur": "5.759",
+    "text": "and and and headings and titles with the"
+  },
+  {
+    "start": "969.6",
+    "dur": "3.84",
+    "text": "CTA that we told it. So we have this"
+  },
+  {
+    "start": "972.079",
+    "dur": "3.76",
+    "text": "very detailed thought leadership"
+  },
+  {
+    "start": "973.44",
+    "dur": "4.72",
+    "text": "newsletter. Uh and then we have a couple"
+  },
+  {
+    "start": "975.839",
+    "dur": "4.321",
+    "text": "notes here at the bottom. We sign off"
+  },
+  {
+    "start": "978.16",
+    "dur": "4.88",
+    "text": "here. Talk soon Alex. Then we have some"
+  },
+  {
+    "start": "980.16",
+    "dur": "4.4",
+    "text": "notes from Claude itself uh about what"
+  },
+  {
+    "start": "983.04",
+    "dur": "4.239",
+    "text": "it did here. So you can see like the"
+  },
+  {
+    "start": "984.56",
+    "dur": "5.36",
+    "text": "newsletter uses your voice DNA uh speaks"
+  },
+  {
+    "start": "987.279",
+    "dur": "4.24",
+    "text": "to your ICP's pain points and transform"
+  },
+  {
+    "start": "989.92",
+    "dur": "5.44",
+    "text": "transforms it into a scannable thought"
+  },
+  {
+    "start": "991.519",
+    "dur": "6.481",
+    "text": "leadership piece with clear CTAs. So"
+  },
+  {
+    "start": "995.36",
+    "dur": "4.64",
+    "text": "that is it. That is how you build out an"
+  },
+  {
+    "start": "998",
+    "dur": "3.92",
+    "text": "incredible writing operation inside of"
+  },
+  {
+    "start": "1000",
+    "dur": "4.959",
+    "text": "Claude code. That is how you build a"
+  },
+  {
+    "start": "1001.92",
+    "dur": "4.96",
+    "text": "newsletter writing sub agent with you"
+  },
+  {
+    "start": "1004.959",
+    "dur": "3.761",
+    "text": "know Claude skills that it can use to"
+  },
+  {
+    "start": "1006.88",
+    "dur": "3.84",
+    "text": "write different types of newsletters."
+  },
+  {
+    "start": "1008.72",
+    "dur": "4.72",
+    "text": "What I'm showing you here is incredibly"
+  },
+  {
+    "start": "1010.72",
+    "dur": "5.039",
+    "text": "valuable. Uh this is just the beginning"
+  },
+  {
+    "start": "1013.44",
+    "dur": "4.16",
+    "text": "of what you can do. Imagine all the"
+  },
+  {
+    "start": "1015.759",
+    "dur": "3.361",
+    "text": "different sub aents you could build, all"
+  },
+  {
+    "start": "1017.6",
+    "dur": "3.84",
+    "text": "the different cloud skills that you"
+  },
+  {
+    "start": "1019.12",
+    "dur": "4.56",
+    "text": "could give them access to. And you start"
+  },
+  {
+    "start": "1021.44",
+    "dur": "4.16",
+    "text": "to really see what the future of, you"
+  },
+  {
+    "start": "1023.68",
+    "dur": "4.96",
+    "text": "know, writing operations inside of"
+  },
+  {
+    "start": "1025.6",
+    "dur": "5.28",
+    "text": "Claude code or AI really looks like. You"
+  },
+  {
+    "start": "1028.64",
+    "dur": "4.399",
+    "text": "see how much power one individual can"
+  },
+  {
+    "start": "1030.88",
+    "dur": "3.76",
+    "text": "have with all these different sub aents"
+  },
+  {
+    "start": "1033.039",
+    "dur": "3.441",
+    "text": "running underneath them, which is"
+  },
+  {
+    "start": "1034.64",
+    "dur": "3.439",
+    "text": "exactly what I do. I don't have a single"
+  },
+  {
+    "start": "1036.48",
+    "dur": "3.76",
+    "text": "employee. I don't have a single person"
+  },
+  {
+    "start": "1038.079",
+    "dur": "4.161",
+    "text": "writing for me. I don't have nothing. I"
+  },
+  {
+    "start": "1040.24",
+    "dur": "5.04",
+    "text": "run all of these writing operations and"
+  },
+  {
+    "start": "1042.24",
+    "dur": "5.36",
+    "text": "agents myself in claude code across"
+  },
+  {
+    "start": "1045.28",
+    "dur": "5.12",
+    "text": "different businesses. I have number two"
+  },
+  {
+    "start": "1047.6",
+    "dur": "5.12",
+    "text": "newsletter rising on substack technology"
+  },
+  {
+    "start": "1050.4",
+    "dur": "5.12",
+    "text": "that I use these sub agents to help me"
+  },
+  {
+    "start": "1052.72",
+    "dur": "5.76",
+    "text": "with. I have client work. I ghostrite"
+  },
+  {
+    "start": "1055.52",
+    "dur": "5.12",
+    "text": "for CEOs. I run content for startups all"
+  },
+  {
+    "start": "1058.48",
+    "dur": "4.4",
+    "text": "by myself using these sub agents. So"
+  },
+  {
+    "start": "1060.64",
+    "dur": "3.84",
+    "text": "definitely check this out. If you're not"
+  },
+  {
+    "start": "1062.88",
+    "dur": "3.679",
+    "text": "doing it, you need to be doing it. And"
+  },
+  {
+    "start": "1064.48",
+    "dur": "3.76",
+    "text": "if you haven't joined my substack yet,"
+  },
+  {
+    "start": "1066.559",
+    "dur": "3.441",
+    "text": "definitely consider doing that because"
+  },
+  {
+    "start": "1068.24",
+    "dur": "3.679",
+    "text": "here you'll get access to all these"
+  },
+  {
+    "start": "1070",
+    "dur": "4.32",
+    "text": "resources that you see in my videos."
+  },
+  {
+    "start": "1071.919",
+    "dur": "6.801",
+    "text": "Quad code starting kits, quad code sub"
+  },
+  {
+    "start": "1074.32",
+    "dur": "4.4",
+    "text": "agent skills. So check that out."
+  }
+]

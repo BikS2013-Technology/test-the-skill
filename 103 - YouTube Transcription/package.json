@@ -1,0 +1,23 @@
+{
+  "name": "youtube-transcription-tool",
+  "version": "1.0.0",
+  "description": "YouTube video transcription tool using youtube-caption-extractor",
+  "main": "dist/cli.js",
+  "scripts": {
+    "start": "ts-node src/cli.ts",
+    "build": "tsc",
+    "transcribe": "ts-node src/cli.ts"
+  },
+  "keywords": ["youtube", "transcription", "captions", "subtitles"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "youtube-caption-extractor": "^1.9.1"
+  }
+}
