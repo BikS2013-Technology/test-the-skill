@@ -90,3 +90,48 @@ I want you to use the "111 - Nano-Banana-API-Guide.md" document to get all the n
 The document's sample scripts have been implemented into the "111 - Nano Banana API" folder.
 The API key needed for the Nano Banana API is stored in the GEMINI_API_KEY environment variable.
 I want you to use only typescript to implement the skills. I want you to create prebuilt tools for each of the tasks mentioned above, to avoid code duplication each time I try to do something.
+
+
+
+I want you to study the langchain documentation, to find how I could send images in various formats like pdf, png, jpg, etc to a model, and assuming that the image is a document, to ask the model to extract specific data (e.g. a specific value, or date, etc)
+I want you also to search the internet to find which are the suggested models for this kind of processing, and apart of the standard models, you instructions to be focused on these specialized models as well.
+I want you to collect all this information in a document, and add a dedicated section on what are the prerequisites (like API_KEY, registration etc) for each case or approach.
+I want you to enrich the document with examples as sample code.
+
+
+
+
+I want you to implement a tool to transcribe YouTube videos using the Youtube-caption-extractor library following the instructions from the "103 - YouTube-Transcription-Guide-ts.md" document. 
+I want you to put the code in the dedicated folder under the "103 - YouTube Transcription" folder.
+I want you to test it using the https://youtu.be/0hgyHOLIFxw?si=QislrW_I_UISBXqt video.
+I want you also to update the document accordingly to explain the implementation you done.
+
+
+I want you to use the create-agent-skills skill to create a skill to enable claude code to transcribe youtube videos
+I want you to use the "103 - YouTube-Transcription-Guide-ts.md" document to get all the necessary instructions.
+You can also study or use the implementation under the "103 - YouTube Transcription" folder, if needed.
+I want you to use only typescript to implement the skill. I want you to create prebuilt tools for each operation, to avoid code duplication each time I try to do something.
+I want you also to keep as part of the skill, the documentation used for the skill development, to support future extensions or future correction of bugs or issues.
+
+
+I want you to examine the "102 - Google-Workspace-APIs-Integration-Guide-ts.md" file and compare it with the implementations under the "102 - Google Workspace APIs Integration - TS" folder.
+I want you to verify that the implementations in the folder are exactly as described in the document. 
+If you detect any discrepancy I want you to report it, instead of trying to fix it. 
+
+
+I want you to explore the GitHub API to find if there are instructions on how I could explore and manage code repositories programaticaly. I want you to explore the maximum extend of operations a developer or a technical leader is performing against the github repositories.
+You can use the Context7 plugin to search the documentation.
+Then I want you to collect all the information needed together with examples in the "120 - GitHub-Management-Guide-ts.md" document.
+All the examples must be in Typescript.
+
+
+
+I want you to explore the Google API to find if there are instructions on how I could monitor YouTube channels for recently published videos. I want you also to find how can I search YouTube for specific videos, or videos related to specific topics, how can I filter the result list based on the subject.
+In case you find it, I want you to collect all the information needed together with examples in the "104 - YouTube-Content-Monitoring-Guide-ts.md" document.
+All the examples must be in Typescript.
+
+
+I want you to implement a tool to monitor YouTube channels videos using the Youtube-caption-extractor library following the instructions from the "103 - YouTube-Transcription-Guide-ts.md" document. 
+I want you to put the code in the dedicated folder under the "103 - YouTube Transcription" folder.
+I want you to test it using the https://youtu.be/0hgyHOLIFxw?si=QislrW_I_UISBXqt video.
+I want you also to update the document accordingly to explain the implementation you done.
