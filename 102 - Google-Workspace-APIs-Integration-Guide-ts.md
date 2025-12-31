@@ -111,7 +111,7 @@ import { drive_v3 } from 'googleapis';
  * @param maxResults - Maximum total results to return (default 100, 0 for unlimited)
  * @returns List of file metadata objects
  */
-async function listFiles(
+export async function listFiles(
   service: drive_v3.Drive,
   pageSize: number = 100,
   query?: string,
@@ -168,7 +168,7 @@ import { drive_v3 } from 'googleapis';
  * @param parentId - Optional parent folder ID
  * @returns Created folder metadata
  */
-async function createFolder(
+export async function createFolder(
   service: drive_v3.Drive,
   name: string,
   parentId?: string
@@ -205,7 +205,7 @@ import * as path from 'path';
  * @param mimeType - Optional MIME type
  * @returns Uploaded file metadata
  */
-async function uploadFile(
+export async function uploadFile(
   service: drive_v3.Drive,
   filePath: string,
   name?: string,
@@ -250,7 +250,7 @@ import { drive_v3 } from 'googleapis';
  * @param description - Optional description
  * @returns Updated file metadata
  */
-async function updateFileMetadata(
+export async function updateFileMetadata(
   service: drive_v3.Drive,
   fileId: string,
   newName?: string,
@@ -288,7 +288,7 @@ import { drive_v3 } from 'googleapis';
  * @param fileId - ID of the file to delete
  * @param permanent - If true, permanently delete; otherwise move to trash
  */
-async function deleteFile(
+export async function deleteFile(
   service: drive_v3.Drive,
   fileId: string,
   permanent: boolean = false
@@ -307,7 +307,7 @@ async function deleteFile(
 /**
  * Restore a file from trash.
  */
-async function restoreFromTrash(
+export async function restoreFromTrash(
   service: drive_v3.Drive,
   fileId: string
 ): Promise<void> {
@@ -363,22 +363,22 @@ import { drive_v3 } from 'googleapis';
  *
  * @param service - Drive API service instance
  * @param query - Search query string
- * @param pageSize - Maximum results per page
+ * @param maxResults - Maximum total results to return (default: 100)
  * @returns List of matching files
  */
-async function searchFiles(
+export async function searchFiles(
   service: drive_v3.Drive,
   query: string,
-  pageSize: number = 100
+  maxResults: number = 100
 ): Promise<drive_v3.Schema$File[]> {
-  return listFiles(service, pageSize, query);
+  return listFiles(service, maxResults, query, maxResults);
 }
 
 
 /**
  * Find Google Docs containing a specific name.
  */
-async function findDocsByName(
+export async function findDocsByName(
   service: drive_v3.Drive,
   nameContains: string
 ): Promise<drive_v3.Schema$File[]> {
@@ -390,7 +390,7 @@ async function findDocsByName(
 /**
  * Find Google Sheets containing a specific name.
  */
-async function findSheetsByName(
+export async function findSheetsByName(
   service: drive_v3.Drive,
   nameContains: string
 ): Promise<drive_v3.Schema$File[]> {
@@ -402,7 +402,7 @@ async function findSheetsByName(
 /**
  * Find Google Slides containing a specific name.
  */
-async function findSlidesByName(
+export async function findSlidesByName(
   service: drive_v3.Drive,
   nameContains: string
 ): Promise<drive_v3.Schema$File[]> {
@@ -414,7 +414,7 @@ async function findSlidesByName(
 /**
  * Find all files in a specific folder.
  */
-async function findFilesInFolder(
+export async function findFilesInFolder(
   service: drive_v3.Drive,
   folderId: string
 ): Promise<drive_v3.Schema$File[]> {
@@ -426,7 +426,7 @@ async function findFilesInFolder(
 /**
  * Find files owned by a specific user.
  */
-async function findFilesByOwner(
+export async function findFilesByOwner(
   service: drive_v3.Drive,
   ownerEmail: string
 ): Promise<drive_v3.Schema$File[]> {
@@ -438,7 +438,7 @@ async function findFilesByOwner(
 /**
  * Find files shared with the current user.
  */
-async function findSharedWithMe(
+export async function findSharedWithMe(
   service: drive_v3.Drive
 ): Promise<drive_v3.Schema$File[]> {
   const query = "sharedWithMe = true and trashed = false";
@@ -449,7 +449,7 @@ async function findSharedWithMe(
 /**
  * Find files modified in the last N days.
  */
-async function findRecentFiles(
+export async function findRecentFiles(
   service: drive_v3.Drive,
   days: number = 7
 ): Promise<drive_v3.Schema$File[]> {
@@ -462,7 +462,7 @@ async function findRecentFiles(
 /**
  * Search file contents for specific text.
  */
-async function fullTextSearch(
+export async function fullTextSearch(
   service: drive_v3.Drive,
   searchText: string
 ): Promise<drive_v3.Schema$File[]> {
@@ -474,7 +474,7 @@ async function fullTextSearch(
 /**
  * Find all folders.
  */
-async function findAllFolders(
+export async function findAllFolders(
   service: drive_v3.Drive
 ): Promise<drive_v3.Schema$File[]> {
   const query = "mimeType = 'application/vnd.google-apps.folder' and trashed = false";
@@ -496,7 +496,7 @@ import { drive_v3 } from 'googleapis';
  * @param includeSubfolders - If true, recursively get subfolder contents
  * @returns List of files and folders
  */
-async function getFolderContents(
+export async function getFolderContents(
   service: drive_v3.Drive,
   folderId: string,
   includeSubfolders: boolean = false
@@ -520,7 +520,7 @@ async function getFolderContents(
 }
 
 
-interface FolderTreeNode {
+export interface FolderTreeNode {
   id: string;
   name: string;
   type: 'folder' | 'file';
@@ -537,7 +537,7 @@ interface FolderTreeNode {
  * @param maxDepth - Maximum recursion depth
  * @returns Dictionary with folder tree structure
  */
-async function getFolderTree(
+export async function getFolderTree(
   service: drive_v3.Drive,
   folderId: string,
   depth: number = 0,
@@ -590,7 +590,7 @@ async function getFolderTree(
  * @param rootId - Optional root folder ID
  * @returns ID of the final folder in the path
  */
-async function createFolderPath(
+export async function createFolderPath(
   service: drive_v3.Drive,
   folderPath: string,
   rootId?: string
@@ -635,7 +635,7 @@ import { drive_v3 } from 'googleapis';
  * @param removeFromCurrent - If true, remove from current parent(s)
  * @returns Updated file metadata
  */
-async function moveFile(
+export async function moveFile(
   service: drive_v3.Drive,
   fileId: string,
   newParentId: string,
@@ -670,7 +670,7 @@ async function moveFile(
  * @param destinationFolderId - Optional destination folder
  * @returns Copied file metadata
  */
-async function copyFile(
+export async function copyFile(
   service: drive_v3.Drive,
   fileId: string,
   newName?: string,
@@ -703,7 +703,7 @@ async function copyFile(
  * @param folderId - ID of the folder to add to
  * @returns Updated file metadata
  */
-async function addToFolder(
+export async function addToFolder(
   service: drive_v3.Drive,
   fileId: string,
   folderId: string
@@ -725,7 +725,7 @@ async function addToFolder(
  * @param sourceFolderId - ID of the source folder
  * @returns Dictionary mapping types to created folder IDs
  */
-async function organizeFilesByType(
+export async function organizeFilesByType(
   service: drive_v3.Drive,
   sourceFolderId: string
 ): Promise<Record<string, string>> {
@@ -801,7 +801,7 @@ import { drive_v3 } from 'googleapis';
  * @param fileId - ID of the file
  * @returns List of permission objects
  */
-async function listPermissions(
+export async function listPermissions(
   service: drive_v3.Drive,
   fileId: string
 ): Promise<drive_v3.Schema$Permission[]> {
@@ -822,7 +822,7 @@ async function listPermissions(
  * @param permissionId - ID of the permission
  * @returns Permission details
  */
-async function getPermissionDetails(
+export async function getPermissionDetails(
   service: drive_v3.Drive,
   fileId: string,
   permissionId: string
@@ -848,7 +848,7 @@ async function getPermissionDetails(
  * @param message - Optional message in notification
  * @returns Created permission
  */
-async function shareWithUser(
+export async function shareWithUser(
   service: drive_v3.Drive,
   fileId: string,
   email: string,
@@ -883,7 +883,7 @@ async function shareWithUser(
  * @param role - Permission role
  * @returns Created permission
  */
-async function shareWithGroup(
+export async function shareWithGroup(
   service: drive_v3.Drive,
   fileId: string,
   groupEmail: string,
@@ -914,7 +914,7 @@ async function shareWithGroup(
  * @param role - Permission role
  * @returns Created permission
  */
-async function shareWithDomain(
+export async function shareWithDomain(
   service: drive_v3.Drive,
   fileId: string,
   domain: string,
@@ -944,7 +944,7 @@ async function shareWithDomain(
  * @param role - Permission role ('reader' or 'commenter')
  * @returns Created permission
  */
-async function shareWithAnyone(
+export async function shareWithAnyone(
   service: drive_v3.Drive,
   fileId: string,
   role: 'reader' | 'commenter' = 'reader'
@@ -973,7 +973,7 @@ async function shareWithAnyone(
  * @param newRole - New role ('reader', 'commenter', 'writer')
  * @returns Updated permission
  */
-async function updatePermission(
+export async function updatePermission(
   service: drive_v3.Drive,
   fileId: string,
   permissionId: string,
@@ -997,7 +997,7 @@ async function updatePermission(
  * @param fileId - ID of the file
  * @param permissionId - ID of the permission to revoke
  */
-async function revokePermission(
+export async function revokePermission(
   service: drive_v3.Drive,
   fileId: string,
   permissionId: string
@@ -1017,7 +1017,7 @@ async function revokePermission(
  * @param email - Email address of the user
  * @returns True if access was revoked, false if user had no access
  */
-async function revokeAccessByEmail(
+export async function revokeAccessByEmail(
   service: drive_v3.Drive,
   fileId: string,
   email: string
@@ -1047,7 +1047,7 @@ async function revokeAccessByEmail(
  *   - The new owner must be in the same domain for Google Workspace
  *   - For personal accounts, ownership transfer may be restricted
  */
-async function transferOwnership(
+export async function transferOwnership(
   service: drive_v3.Drive,
   fileId: string,
   newOwnerEmail: string
@@ -1069,7 +1069,14 @@ async function transferOwnership(
 }
 
 
-interface SharingSummary {
+/**
+ * SharingSummary interface for standalone functions.
+ * Note: The DriveManager class (Section 6.3) uses a different SharingSummary
+ * interface with 'editors'/'viewers' (user-friendly terms) instead of
+ * 'writers'/'readers' (API terms), and includes additional details like
+ * domain access roles.
+ */
+export interface SharingSummary {
   owner: string | null;
   writers: string[];
   commenters: string[];
@@ -1085,7 +1092,7 @@ interface SharingSummary {
  * @param fileId - ID of the file
  * @returns Dictionary with sharing summary
  */
-async function getSharingSummary(
+export async function getSharingSummary(
   service: drive_v3.Drive,
   fileId: string
 ): Promise<SharingSummary> {
@@ -1148,7 +1155,7 @@ import { docs_v1 } from 'googleapis';
  * @param title - Document title
  * @returns Created document metadata
  */
-async function createDocument(
+export async function createDocument(
   docsService: docs_v1.Docs,
   title: string
 ): Promise<docs_v1.Schema$Document> {
@@ -1168,7 +1175,7 @@ async function createDocument(
  * @param content - Initial text content
  * @returns Created document metadata
  */
-async function createDocumentWithContent(
+export async function createDocumentWithContent(
   docsService: docs_v1.Docs,
   title: string,
   content: string
@@ -1205,7 +1212,7 @@ async function createDocumentWithContent(
  * @param folderId - Parent folder ID
  * @returns Created document metadata
  */
-async function createDocumentInFolder(
+export async function createDocumentInFolder(
   driveService: drive_v3.Drive,
   docsService: docs_v1.Docs,
   title: string,
@@ -1235,7 +1242,7 @@ import { docs_v1 } from 'googleapis';
  * @param documentId - ID of the document
  * @returns Document object with content
  */
-async function getDocument(
+export async function getDocument(
   docsService: docs_v1.Docs,
   documentId: string
 ): Promise<docs_v1.Schema$Document> {
@@ -1254,7 +1261,7 @@ async function getDocument(
  * @param documentId - ID of the document
  * @returns Plain text content of the document
  */
-async function getDocumentText(
+export async function getDocumentText(
   docsService: docs_v1.Docs,
   documentId: string
 ): Promise<string> {
@@ -1288,7 +1295,7 @@ async function getDocumentText(
 }
 
 
-interface DocumentSummary {
+export interface DocumentSummary {
   title: string | null | undefined;
   documentId: string;
   summary: string;
@@ -1303,7 +1310,7 @@ interface DocumentSummary {
  * @param maxChars - Maximum characters to return
  * @returns Dictionary with title and summary
  */
-async function getDocumentSummary(
+export async function getDocumentSummary(
   docsService: docs_v1.Docs,
   documentId: string,
   maxChars: number = 500
@@ -1325,12 +1332,12 @@ async function getDocumentSummary(
 }
 
 
-interface HeadingInfo {
+export interface HeadingInfo {
   level: string;
   text: string;
 }
 
-interface DocumentStructure {
+export interface DocumentStructure {
   title: string | null | undefined;
   headings: HeadingInfo[];
   lists: number;
@@ -1345,7 +1352,7 @@ interface DocumentStructure {
  * @param documentId - ID of the document
  * @returns Dictionary with document structure
  */
-async function getDocumentStructure(
+export async function getDocumentStructure(
   docsService: docs_v1.Docs,
   documentId: string
 ): Promise<DocumentStructure> {
@@ -1408,7 +1415,7 @@ import { docs_v1 } from 'googleapis';
  * @param documentId - ID of the document
  * @param text - Text to append
  */
-async function appendText(
+export async function appendText(
   docsService: docs_v1.Docs,
   documentId: string,
   text: string
@@ -1443,7 +1450,7 @@ async function appendText(
  * @param text - Text to insert
  * @param index - Position to insert at (1-based)
  */
-async function insertTextAtPosition(
+export async function insertTextAtPosition(
   docsService: docs_v1.Docs,
   documentId: string,
   text: string,
@@ -1474,7 +1481,7 @@ async function insertTextAtPosition(
  * @param newText - Replacement text
  * @returns Number of replacements made
  */
-async function replaceText(
+export async function replaceText(
   docsService: docs_v1.Docs,
   documentId: string,
   oldText: string,
@@ -1513,7 +1520,7 @@ async function replaceText(
  * @param startIndex - Start index (1-based)
  * @param endIndex - End index
  */
-async function deleteContentRange(
+export async function deleteContentRange(
   docsService: docs_v1.Docs,
   documentId: string,
   startIndex: number,
@@ -1545,7 +1552,7 @@ async function deleteContentRange(
  * @param text - Heading text
  * @param headingLevel - Heading level (1-6)
  */
-async function addHeading(
+export async function addHeading(
   docsService: docs_v1.Docs,
   documentId: string,
   text: string,
@@ -1600,7 +1607,7 @@ async function addHeading(
 // TypeScript - Search within documents
 import { docs_v1, drive_v3 } from 'googleapis';
 
-interface TextMatch {
+export interface TextMatch {
   position: number;
   context: string;
   match: string;
@@ -1614,7 +1621,7 @@ interface TextMatch {
  * @param searchText - Text to search for
  * @returns List of matches with context
  */
-async function searchInDocument(
+export async function searchInDocument(
   docsService: docs_v1.Docs,
   documentId: string,
   searchText: string
@@ -1649,7 +1656,7 @@ async function searchInDocument(
 }
 
 
-interface DocumentSearchResult {
+export interface DocumentSearchResult {
   documentId: string;
   name: string;
   matchCount: number;
@@ -1665,7 +1672,7 @@ interface DocumentSearchResult {
  * @param folderId - Optional folder to limit search
  * @returns List of documents containing the text
  */
-async function searchDocumentsForText(
+export async function searchDocumentsForText(
   driveService: drive_v3.Drive,
   docsService: docs_v1.Docs,
   searchText: string,
@@ -1720,7 +1727,7 @@ import { sheets_v4 } from 'googleapis';
  * @param title - Spreadsheet title
  * @returns Created spreadsheet metadata
  */
-async function createSpreadsheet(
+export async function createSpreadsheet(
   sheetsService: sheets_v4.Sheets,
   title: string
 ): Promise<sheets_v4.Schema$Spreadsheet> {
@@ -1747,7 +1754,7 @@ async function createSpreadsheet(
  * @param sheetNames - List of sheet names
  * @returns Created spreadsheet metadata
  */
-async function createSpreadsheetWithSheets(
+export async function createSpreadsheetWithSheets(
   sheetsService: sheets_v4.Sheets,
   title: string,
   sheetNames: string[]
@@ -1779,7 +1786,7 @@ async function createSpreadsheetWithSheets(
  * @param sheetName - Name of the sheet
  * @returns Created spreadsheet metadata
  */
-async function createSpreadsheetWithData(
+export async function createSpreadsheetWithData(
   sheetsService: sheets_v4.Sheets,
   title: string,
   data: any[][],
@@ -1809,7 +1816,7 @@ import { sheets_v4 } from 'googleapis';
  * @param spreadsheetId - ID of the spreadsheet
  * @returns Spreadsheet metadata
  */
-async function getSpreadsheet(
+export async function getSpreadsheet(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string
 ): Promise<sheets_v4.Schema$Spreadsheet> {
@@ -1829,7 +1836,7 @@ async function getSpreadsheet(
  * @param rangeName - A1 notation range (e.g., 'Sheet1!A1:D10')
  * @returns 2D array of values
  */
-async function readValues(
+export async function readValues(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   rangeName: string
@@ -1851,7 +1858,7 @@ async function readValues(
  * @param sheetName - Name of the sheet
  * @returns 2D array of all values
  */
-async function readAllValues(
+export async function readAllValues(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetName: string = 'Sheet1'
@@ -1868,7 +1875,7 @@ async function readAllValues(
  * @param ranges - List of A1 notation ranges
  * @returns Dictionary mapping ranges to values
  */
-async function readMultipleRanges(
+export async function readMultipleRanges(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   ranges: string[]
@@ -1889,14 +1896,14 @@ async function readMultipleRanges(
 }
 
 
-interface SheetSummary {
+export interface SheetSummary {
   sheetId: number;
   title: string;
   rowCount: number;
   columnCount: number;
 }
 
-interface SpreadsheetSummary {
+export interface SpreadsheetSummary {
   title: string | null | undefined;
   spreadsheetId: string;
   url: string | null | undefined;
@@ -1910,7 +1917,7 @@ interface SpreadsheetSummary {
  * @param spreadsheetId - ID of the spreadsheet
  * @returns Dictionary with spreadsheet summary
  */
-async function getSheetSummary(
+export async function getSheetSummary(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string
 ): Promise<SpreadsheetSummary> {
@@ -1954,7 +1961,7 @@ import { sheets_v4 } from 'googleapis';
  * @param values - 2D array of values
  * @returns Update result
  */
-async function writeValues(
+export async function writeValues(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   rangeName: string,
@@ -1980,7 +1987,7 @@ async function writeValues(
  * @param values - 2D array of values to append
  * @returns Append result
  */
-async function appendValues(
+export async function appendValues(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   rangeName: string,
@@ -2005,7 +2012,7 @@ async function appendValues(
  * @param spreadsheetId - ID of the spreadsheet
  * @param rangeName - A1 notation range
  */
-async function clearValues(
+export async function clearValues(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   rangeName: string
@@ -2025,7 +2032,7 @@ async function clearValues(
  * @param data - Dictionary mapping ranges to values
  * @returns Update result
  */
-async function updateMultipleRanges(
+export async function updateMultipleRanges(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   data: Record<string, any[][]>
@@ -2054,7 +2061,7 @@ async function updateMultipleRanges(
  * @param sheetName - Name for the new sheet
  * @returns New sheet properties
  */
-async function addSheet(
+export async function addSheet(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetName: string
@@ -2085,7 +2092,7 @@ async function addSheet(
  * @param spreadsheetId - ID of the spreadsheet
  * @param sheetId - ID of the sheet to delete
  */
-async function deleteSheet(
+export async function deleteSheet(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetId: number
@@ -2111,7 +2118,7 @@ async function deleteSheet(
 // TypeScript - Search and query spreadsheet data
 import { sheets_v4 } from 'googleapis';
 
-interface CellMatch {
+export interface CellMatch {
   cell: string;
   row: number;
   column: number;
@@ -2127,7 +2134,7 @@ interface CellMatch {
  * @param sheetName - Sheet to search
  * @returns List of matches with cell references
  */
-async function findInSheet(
+export async function findInSheet(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   searchText: string,
@@ -2171,7 +2178,7 @@ async function findInSheet(
  * @param sheetName - Sheet to query
  * @returns Filtered rows
  */
-async function querySheet(
+export async function querySheet(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   columnFilters: Record<number, string>,
@@ -2222,7 +2229,7 @@ async function querySheet(
  * @param sheetName - Sheet name
  * @returns List of column values
  */
-async function getColumnValues(
+export async function getColumnValues(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   column: string | number,
@@ -2252,7 +2259,7 @@ async function getColumnValues(
  * @param sheetName - Sheet name
  * @returns Row data as dictionary (with headers) or null
  */
-async function findRowByValue(
+export async function findRowByValue(
   sheetsService: sheets_v4.Sheets,
   spreadsheetId: string,
   column: string | number,
@@ -2307,7 +2314,7 @@ import { slides_v1 } from 'googleapis';
  * @param title - Presentation title
  * @returns Created presentation metadata
  */
-async function createPresentation(
+export async function createPresentation(
   slidesService: slides_v1.Slides,
   title: string
 ): Promise<slides_v1.Schema$Presentation> {
@@ -2331,7 +2338,7 @@ async function createPresentation(
  * @param slideCount - Number of slides to create
  * @returns Created presentation
  */
-async function createPresentationWithSlides(
+export async function createPresentationWithSlides(
   slidesService: slides_v1.Slides,
   title: string,
   slideCount: number = 5
@@ -2376,7 +2383,7 @@ import { slides_v1 } from 'googleapis';
  * @param presentationId - ID of the presentation
  * @returns Presentation object
  */
-async function getPresentation(
+export async function getPresentation(
   slidesService: slides_v1.Slides,
   presentationId: string
 ): Promise<slides_v1.Schema$Presentation> {
@@ -2388,13 +2395,13 @@ async function getPresentation(
 }
 
 
-interface SlideInfo {
+export interface SlideInfo {
   slideNumber: number;
   objectId: string;
   textContent: string[];
 }
 
-interface PresentationSummary {
+export interface PresentationSummary {
   title: string | null | undefined;
   presentationId: string;
   slideCount: number;
@@ -2408,7 +2415,7 @@ interface PresentationSummary {
  * @param presentationId - ID of the presentation
  * @returns Dictionary with presentation summary
  */
-async function getPresentationSummary(
+export async function getPresentationSummary(
   slidesService: slides_v1.Slides,
   presentationId: string
 ): Promise<PresentationSummary> {
@@ -2459,7 +2466,7 @@ async function getPresentationSummary(
  * @param slideIndex - Index of the slide (0-based)
  * @returns List of text strings from the slide
  */
-async function getSlideText(
+export async function getSlideText(
   slidesService: slides_v1.Slides,
   presentationId: string,
   slideIndex: number = 0
@@ -2499,7 +2506,7 @@ async function getSlideText(
  * @param presentationId - ID of the presentation
  * @returns Dictionary mapping slide numbers to text content
  */
-async function getAllPresentationText(
+export async function getAllPresentationText(
   slidesService: slides_v1.Slides,
   presentationId: string
 ): Promise<Record<number, string[]>> {
@@ -2538,7 +2545,7 @@ async function getAllPresentationText(
 import { slides_v1 } from 'googleapis';
 import { v4 as uuidv4 } from 'uuid';
 
-type PredefinedLayout = 'BLANK' | 'TITLE' | 'TITLE_AND_BODY' | 'TITLE_AND_TWO_COLUMNS' | 'TITLE_ONLY' | 'SECTION_HEADER' | 'SECTION_TITLE_AND_DESCRIPTION' | 'ONE_COLUMN_TEXT' | 'MAIN_POINT' | 'BIG_NUMBER';
+export type PredefinedLayout = 'BLANK' | 'TITLE' | 'TITLE_AND_BODY' | 'TITLE_AND_TWO_COLUMNS' | 'TITLE_ONLY' | 'SECTION_HEADER' | 'SECTION_TITLE_AND_DESCRIPTION' | 'ONE_COLUMN_TEXT' | 'MAIN_POINT' | 'BIG_NUMBER';
 
 /**
  * Add a new slide to the presentation.
@@ -2549,7 +2556,7 @@ type PredefinedLayout = 'BLANK' | 'TITLE' | 'TITLE_AND_BODY' | 'TITLE_AND_TWO_CO
  * @param insertionIndex - Position to insert (undefined = end)
  * @returns Created slide info
  */
-async function addSlide(
+export async function addSlide(
   slidesService: slides_v1.Slides,
   presentationId: string,
   layout: PredefinedLayout = 'BLANK',
@@ -2583,7 +2590,7 @@ async function addSlide(
  * @param presentationId - ID of the presentation
  * @param slideObjectId - Object ID of the slide to delete
  */
-async function deleteSlide(
+export async function deleteSlide(
   slidesService: slides_v1.Slides,
   presentationId: string,
   slideObjectId: string
@@ -2616,7 +2623,7 @@ async function deleteSlide(
  * @param height - Height in points
  * @returns Created element info
  */
-async function addTextBox(
+export async function addTextBox(
   slidesService: slides_v1.Slides,
   presentationId: string,
   slideObjectId: string,
@@ -2675,7 +2682,7 @@ async function addTextBox(
  * @param newText - Replacement text
  * @returns Number of replacements
  */
-async function replaceTextInPresentation(
+export async function replaceTextInPresentation(
   slidesService: slides_v1.Slides,
   presentationId: string,
   oldText: string,
@@ -2771,8 +2778,9 @@ export const SCOPES = [
   'https://www.googleapis.com/auth/presentations',
 ];
 
-const TOKEN_PATH = path.join(process.cwd(), 'token.json');
-const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
+// Default paths - can be overridden
+const DEFAULT_TOKEN_PATH = path.join(process.cwd(), 'token.json');
+const DEFAULT_CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
 // Type for the auth client - uses ReturnType to handle type compatibility
 // between @google-cloud/local-auth and googleapis
@@ -2828,9 +2836,12 @@ async function loadSavedCredentials(
 
 /**
  * Save credentials to file.
+ * Note: Uses the specific authenticate return type rather than GoogleAuthClient
+ * because we need access to the credentials property which is only guaranteed
+ * to exist on the authenticate result, not on fromJSON results.
  */
 async function saveCredentials(
-  client: GoogleAuthClient,
+  client: Awaited<ReturnType<typeof authenticate>>,
   credentialsPath: string,
   tokenPath: string
 ): Promise<void> {
@@ -2855,8 +2866,8 @@ async function saveCredentials(
  * @returns Authenticated credentials object
  */
 export async function getCredentials(
-  credentialsPath: string = CREDENTIALS_PATH,
-  tokenPath: string = TOKEN_PATH,
+  credentialsPath: string = DEFAULT_CREDENTIALS_PATH,
+  tokenPath: string = DEFAULT_TOKEN_PATH,
   scopes: string[] = SCOPES
 ): Promise<GoogleAuthClient> {
   const savedClient = await loadSavedCredentials(tokenPath);
@@ -2880,8 +2891,8 @@ export async function getCredentials(
  * Get Google Drive API service instance.
  */
 export async function getDriveService(
-  credentialsPath: string = CREDENTIALS_PATH,
-  tokenPath: string = TOKEN_PATH
+  credentialsPath: string = DEFAULT_CREDENTIALS_PATH,
+  tokenPath: string = DEFAULT_TOKEN_PATH
 ): Promise<drive_v3.Drive> {
   const auth = await getCredentials(credentialsPath, tokenPath);
   return google.drive({ version: 'v3', auth: auth as any });
@@ -2891,8 +2902,8 @@ export async function getDriveService(
  * Get Google Docs API service instance.
  */
 export async function getDocsService(
-  credentialsPath: string = CREDENTIALS_PATH,
-  tokenPath: string = TOKEN_PATH
+  credentialsPath: string = DEFAULT_CREDENTIALS_PATH,
+  tokenPath: string = DEFAULT_TOKEN_PATH
 ): Promise<docs_v1.Docs> {
   const auth = await getCredentials(credentialsPath, tokenPath);
   return google.docs({ version: 'v1', auth: auth as any });
@@ -2902,8 +2913,8 @@ export async function getDocsService(
  * Get Google Sheets API service instance.
  */
 export async function getSheetsService(
-  credentialsPath: string = CREDENTIALS_PATH,
-  tokenPath: string = TOKEN_PATH
+  credentialsPath: string = DEFAULT_CREDENTIALS_PATH,
+  tokenPath: string = DEFAULT_TOKEN_PATH
 ): Promise<sheets_v4.Sheets> {
   const auth = await getCredentials(credentialsPath, tokenPath);
   return google.sheets({ version: 'v4', auth: auth as any });
@@ -2913,8 +2924,8 @@ export async function getSheetsService(
  * Get Google Slides API service instance.
  */
 export async function getSlidesService(
-  credentialsPath: string = CREDENTIALS_PATH,
-  tokenPath: string = TOKEN_PATH
+  credentialsPath: string = DEFAULT_CREDENTIALS_PATH,
+  tokenPath: string = DEFAULT_TOKEN_PATH
 ): Promise<slides_v1.Slides> {
   const auth = await getCredentials(credentialsPath, tokenPath);
   return google.slides({ version: 'v1', auth: auth as any });
@@ -2933,8 +2944,8 @@ export interface AllServices {
  * @returns Object with 'drive', 'docs', 'sheets', 'slides' services
  */
 export async function getAllServices(
-  credentialsPath: string = CREDENTIALS_PATH,
-  tokenPath: string = TOKEN_PATH
+  credentialsPath: string = DEFAULT_CREDENTIALS_PATH,
+  tokenPath: string = DEFAULT_TOKEN_PATH
 ): Promise<AllServices> {
   const auth = await getCredentials(credentialsPath, tokenPath);
 
@@ -2960,6 +2971,13 @@ import * as path from 'path';
 import { drive_v3 } from 'googleapis';
 import { getDriveService } from './google-workspace-auth';
 
+/**
+ * SharingSummary interface for DriveManager class.
+ * Note: This interface uses user-friendly terms ('editors'/'viewers') and provides
+ * more detail than the standalone functions' SharingSummary in Section 2.5, which
+ * uses API terms ('writers'/'readers'). The 'anyoneWithLink' field here can be
+ * 'edit', 'view', or false for more precise access indication.
+ */
 export interface SharingSummary {
   owner: string | null;
   editors: string[];
@@ -3605,14 +3623,14 @@ if (require.main === module) {
 // TypeScript - Retry with exponential backoff
 import { GaxiosError } from 'gaxios';
 
-interface RetryableRequest<T> {
+export interface RetryableRequest<T> {
   (): Promise<T>;
 }
 
 /**
  * Execute API request with exponential backoff.
  */
-async function executeWithRetry<T>(
+export async function executeWithRetry<T>(
   request: RetryableRequest<T>,
   maxRetries: number = 5
 ): Promise<T> {
@@ -3624,7 +3642,7 @@ async function executeWithRetry<T>(
         const status = error.response?.status;
         if (status && [429, 500, 502, 503, 504].includes(status)) {
           const waitTime = Math.pow(2, attempt) + Math.random();
-          console.log(`Retrying in ${waitTime.toFixed(2)} seconds...`);
+          console.log(`Attempt ${attempt + 1} failed with ${status}. Retrying in ${waitTime.toFixed(2)} seconds...`);
           await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
           continue;
         }
